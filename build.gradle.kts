@@ -23,6 +23,10 @@ dependencies {
 
     // This dependency is used by the application.
     implementation(libs.guava)
+
+    // Driver per connettere Java a MySQL/MariaDB
+    implementation("com.mysql:mysql-connector-j:8.3.0")
+
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
