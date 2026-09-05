@@ -1,5 +1,6 @@
 package dao;
 
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,18 +13,14 @@ public class DatabaseConnection {
     private static String PASSWORD;
 
     static {
-        // Carica il file di configurazione
-        try (InputStream input = DatabaseConnection.class.getClassLoader().getResourceAsStream("db.properties")) {
+        try (InputStream input = new FileInputStream("db.properties")) {
             Properties prop = new Properties();
-            if (input == null) {
-                System.out.println("Impossibile trovare il file db.properties!");
-            } else {
-                prop.load(input);
-                URL = prop.getProperty("db.url");
-                USER = prop.getProperty("db.user");
-                PASSWORD = prop.getProperty("db.password");
-            }
+            prop.load(input);
+            URL = prop.getProperty("db.url");
+            USER = prop.getProperty("db.user");
+            PASSWORD = prop.getProperty("db.password");
         } catch (Exception ex) {
+            System.out.println("Impossibile trovare il file db.properties nella cartella principale!");
             ex.printStackTrace();
         }
     }
