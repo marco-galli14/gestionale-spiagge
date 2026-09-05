@@ -3,13 +3,13 @@ package model;
 public class Hotel {
     private int codHotel;
     private String nomeHotel;
-    private float scontoHotel;
+    private int scontoHotel;
 
     public Hotel() {
 
     }
 
-    public Hotel(int codHotel, String nomeHotel, float scontoHotel) {
+    public Hotel(int codHotel, String nomeHotel, int scontoHotel) {
         this.codHotel = codHotel;
         this.nomeHotel = nomeHotel;
         this.scontoHotel = scontoHotel;
@@ -35,7 +35,7 @@ public class Hotel {
         this.nomeHotel = nomeHotel;
     }
 
-    public void setScontoHotel(float scontoHotel) {
+    public void setScontoHotel(int scontoHotel) {
         this.scontoHotel = scontoHotel;
     }
 }

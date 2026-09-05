@@ -3,7 +3,7 @@ package model;
 public class Campo {
     private String codCampo;
     private String nomeCampo;
-    private String stato;
+    private boolean stato;
     private String tipoCampo;
     private String tipoSport;
     private Boolean richiedeRete;
@@ -13,7 +13,7 @@ public class Campo {
 
     }
 
-    public Campo(String codCampo, String nomeCampo, String stato, String tipoCampo, String tipoSport,
+    public Campo(String codCampo, String nomeCampo, boolean stato, String tipoCampo, String tipoSport,
             Boolean richiedeRete, String tipoFondo) {
         this.codCampo = codCampo;
         this.nomeCampo = nomeCampo;
@@ -32,7 +32,7 @@ public class Campo {
         return nomeCampo;
     }
 
-    public String getStato() {
+    public boolean getStato() {
         return stato;
     }
 
@@ -60,7 +60,7 @@ public class Campo {
         this.nomeCampo = nomeCampo;
     }
 
-    public void setStato(String stato) {
+    public void setStato(boolean stato) {
         this.stato = stato;
     }
 

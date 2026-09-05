@@ -2,13 +2,13 @@ package model;
 
 public class Gruppo {
     private int idGruppo;
-    private float scontoGruppo;
+    private int scontoGruppo;
 
     public Gruppo() {
 
     }
 
-    public Gruppo(int idGruppo, float scontoGruppo) {
+    public Gruppo(int idGruppo, int scontoGruppo) {
         this.idGruppo = idGruppo;
         this.scontoGruppo = scontoGruppo;
     }
@@ -25,7 +25,7 @@ public class Gruppo {
         this.idGruppo = idGruppo;
     }
 
-    public void setScontoGruppo(float scontoGruppo) {
+    public void setScontoGruppo(int scontoGruppo) {
         this.scontoGruppo = scontoGruppo;
     }
     

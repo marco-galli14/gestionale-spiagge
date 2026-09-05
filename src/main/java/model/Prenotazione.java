@@ -8,7 +8,7 @@ public class Prenotazione {
     private LocalDate dataInizio;
     private LocalDate dataFine;
     private int PrezzoTotale;
-    private String StatoPrenotazione;
+    private boolean statoPagmento;
     private int codDipendente;
     private String cf;
     private String codPacchetto;
@@ -17,12 +17,13 @@ public class Prenotazione {
     public Prenotazione() {
     }
 
-    public Prenotazione(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine, int prezzoTotale, String statoPrenotazione, int codDipendente, String cf, String codPacchetto, Integer idGruppo) {
+    public Prenotazione(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine,int prezzoTotale,
+            boolean statoPagmento, int codDipendente, String cf, String codPacchetto, Integer idGruppo) {
         this.codPrenotazione = codPrenotazione;
         this.dataInizio = dataInizio;
         this.dataFine = dataFine;
-        PrezzoTotale = prezzoTotale;
-        StatoPrenotazione = statoPrenotazione;
+        this.PrezzoTotale = prezzoTotale;
+        this.statoPagmento = statoPagmento;
         this.codDipendente = codDipendente;
         this.cf = cf;
         this.codPacchetto = codPacchetto;
@@ -61,12 +62,12 @@ public class Prenotazione {
         PrezzoTotale = prezzoTotale;
     }
 
-    public String getStatoPrenotazione() {
-        return StatoPrenotazione;
+    public boolean getStatoPagmento() {
+        return statoPagmento;
     }
 
-    public void setStatoPrenotazione(String statoPrenotazione) {
-        StatoPrenotazione = statoPrenotazione;
+    public void setStatoPagmento(boolean statoPrenotazione) {
+        statoPagmento = statoPrenotazione;
     }
 
     public int getCodDipendente() {
