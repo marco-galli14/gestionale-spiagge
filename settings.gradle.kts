@@ -11,4 +11,3 @@ plugins {
 }
 
 rootProject.name = "gestionale-spiagge"
-include("app")
