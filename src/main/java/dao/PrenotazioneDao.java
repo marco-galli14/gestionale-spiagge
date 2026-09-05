@@ -6,7 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 
-public class PrenotazioneDao {
+public class PrenotazioneDAO {
 
     public boolean addPrenotazione(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine,
                                     int codDipendente, String cf) {
