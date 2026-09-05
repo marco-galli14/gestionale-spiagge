@@ -33,9 +33,8 @@ public class OmbrelloneDao {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     int numero = rs.getInt("Numero");
-                    int codZona = rs.getInt("CodZona"); // Corrisponde al tipo int della tua classe Ombrellone
+                    int codZona = rs.getInt("CodZona");
 
-                    // Creiamo l'oggetto Ombrellone usando il costruttore con parametri
                     Ombrellone ombrellone = new Ombrellone(numero, codZona);
                     ombrelloniDisponibili.add(ombrellone);
                 }

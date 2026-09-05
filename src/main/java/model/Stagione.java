@@ -2,25 +2,25 @@ package model;
 
 import java.util.Date;
 public class Stagione {
-    private String cosStagione;
+    private String codStagione;
     private Date dataInizio;
     private Date dataFine;
 
     public Stagione() {
     }
 
-    public Stagione(String cosStagione, Date dataInizio, Date dataFine) {
-        this.cosStagione = cosStagione;
+    public Stagione(String codStagione, Date dataInizio, Date dataFine) {
+        this.codStagione = codStagione;
         this.dataInizio = dataInizio;
         this.dataFine = dataFine;
     }
 
-    public String getCosStagione() {
-        return cosStagione;
+    public String getCodStagione() {
+        return codStagione;
     }
 
-    public void setCosStagione(String cosStagione) {
-        this.cosStagione = cosStagione;
+    public void setCodStagione(String codStagione) {
+        this.codStagione = codStagione;
     }
 
     public Date getDataInizio() {
