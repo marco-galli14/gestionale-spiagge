@@ -16,7 +16,7 @@ public class NoleggioAttrezzaturaDAO {
     public boolean inserisciNoleggioAttrezzatura(String codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, 
                                                    int durataOre, String cf, String codDipendente, String codAttrezzatura) {
         String query = "INSERT INTO noleggio_attrezzatura (CodNoleggio, DataNoleggio, OraInizio, DurataOre, CostoTotale, CF, CodPrenotazione, CodDipendente, CodAttrezzatura) " +
-                       "VALUES (?, ?, ?, ?, NULL, ?, (SELECT CodPrenotazione FROM Prenotazione WHERE CF = ? AND ? BETWEEN DataInizio AND DataFine LIMIT 1), ?, ?)";
+                       "VALUES (?, ?, ?, ?, '00.00', ?, (SELECT CodPrenotazione FROM Prenotazione WHERE CF = ? AND ? BETWEEN DataInizio AND DataFine LIMIT 1), ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
