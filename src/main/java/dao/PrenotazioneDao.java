@@ -187,22 +187,16 @@ public class PrenotazioneDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    boolean pagam = false;
                     String codP = rs.getString("CodPrenotazione");
                     LocalDate datI = rs.getDate("DataInizio").toLocalDate();
                     LocalDate datF = rs.getDate("DataFine").toLocalDate();
                     int prezzo = rs.getInt("PrezzoTotale");
-                    String sp = rs.getString("StatoPagamento");
                     int cd = rs.getInt("CodDipendente");
                     String cf = rs.getString("CF");
                     String cp = rs.getString("CodPacchetto");
                     Integer idGruppo = rs.getInt("ID_gruppo");
 
-                    if (sp.equals("Pagato")) {
-                        pagam = true;
-                    }
-
-                    Prenotazione pren = new Prenotazione(codP, datI, datF, prezzo, pagam, cd, cf, cp, idGruppo);
+                    Prenotazione pren = new Prenotazione(codP, datI, datF, prezzo, false, cd, cf, cp, idGruppo);
                     nonSaldate.add(pren);
                 }
             }
