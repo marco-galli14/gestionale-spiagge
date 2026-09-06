@@ -1,7 +1,7 @@
 
 import model.Ombrellone;
 import dao.AllestimentoDAO;
-import dao.OmbrelloneDao;
+import dao.OmbrelloneDAO;
 import dao.PrenotazioneDAO;
 import dao.PrenotazioneGiornalieraDAO;
 

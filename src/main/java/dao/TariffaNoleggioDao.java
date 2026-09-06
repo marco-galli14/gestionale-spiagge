@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class TariffaNoleggioDao {
+public class TariffaNoleggioDAO {
 
     public boolean inserisciTariffaNoleggio(String codStagione, String codAttrezzatura, double tariffaOraria) {
         String query = "INSERT INTO tariffa_noleggio (CodStagione, CodAttrezzatura, TariffaOraria) VALUES (?, ?, ?)";

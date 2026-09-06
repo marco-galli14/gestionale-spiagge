@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalTime;
 
-public class PrenotazioneCampoDao {
+public class PrenotazioneCampoDAO {
 
     public boolean inserisciPrenotazioneCampo(String codPrenotazione, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, String codDipendente) {
         String query = "INSERT INTO prenotazione_campo (CodPrenotazione, DataPrenotazione, OraInizio, OraFine, CodCampo, CF, CodDipendente) " +

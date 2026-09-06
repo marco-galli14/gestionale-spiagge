@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ZonaDao {
+public class ZonaDAO {
 
     public static class ZonaOccupazioneInfo {
         private final String codZona;

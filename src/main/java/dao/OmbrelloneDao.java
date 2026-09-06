@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import model.Ombrellone;
 
-public class OmbrelloneDao {
+public class OmbrelloneDAO {
 
     public List<Ombrellone> getOmbrelloniDisponibili(LocalDate dataInizio, LocalDate dataFine) {
         List<Ombrellone> ombrelloniDisponibili = new ArrayList<>();

@@ -11,7 +11,7 @@ import java.util.List;
 
 import common.StoricoNoleggio;
 
-public class NoleggioAttrezzaturaDao {
+public class NoleggioAttrezzaturaDAO {
 
     public boolean inserisciNoleggioAttrezzatura(String codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, 
                                                    int durataOre, String cf, String codDipendente, String codAttrezzatura) {

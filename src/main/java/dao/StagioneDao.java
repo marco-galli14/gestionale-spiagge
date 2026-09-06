@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 
-public class StagioneDao {
+public class StagioneDAO {
 
     public boolean inserisciStagione(String codStagione, LocalDate dataInizio, LocalDate dataFine) {
         String query = "INSERT INTO STAGIONE (CodStagione, DataInizio, DataFine) VALUES (?, ?, ?)";
