@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 public class ClienteDAO {
 
-    public boolean insertCliente(String cf, String nomeCliente, String cognomeCliente, String email, int telefono, Integer codHotel) {
+    public boolean insertCliente(String cf, String nomeCliente, String cognomeCliente, String email, String telefono, Integer codHotel) {
         
         String query = "INSERT INTO CLIENTE (CF, Nome, Cognome, Email, Telefono, CodHotel, ID_gruppo)" +
                         "VALUES (?, ?, ?,?, ?, ?, NULL)";
@@ -18,7 +18,7 @@ public class ClienteDAO {
                 ps.setString(2, nomeCliente);
                 ps.setString(3, cognomeCliente);
                 ps.setString(4, email);
-                ps.setInt(5, telefono);
+                ps.setString(5, telefono);
                 ps.setObject(6, codHotel);
 
                 int rowsAffected = ps.executeUpdate();

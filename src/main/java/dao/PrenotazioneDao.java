@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import common.StoricoPrenotazione;
 import model.Prenotazione;
 
 public class PrenotazioneDAO {
@@ -206,6 +207,36 @@ public class PrenotazioneDAO {
         }
 
         return nonSaldate;
+    }
+
+    public List<StoricoPrenotazione> getStoricoPrenotazioni() {
+
+        List<StoricoPrenotazione> storicoPrenotazioni = new ArrayList<>();
+
+        String query = "SELECT c.CF, c.Nome, c.Cognome, p.CodPrenotazione, p.DataInizio, p.DataFine, p.PrezzoTotale " +
+                        "FROM cliente c, prenotazione p " +
+                        "WHERE c.CF = p.CF";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String cf = rs.getString("CF");
+                String nome = rs.getString("Nome");
+                String cognome = rs.getString("Cognome");
+                String codPrenotazione = rs.getString("CodPrenotazione");
+                LocalDate dataInizio = rs.getDate("DataInizio").toLocalDate();
+                LocalDate dataFine = rs.getDate("DataFine").toLocalDate();
+                int prezzoTotale = rs.getInt("PrezzoTotale");
+
+                storicoPrenotazioni.add(new StoricoPrenotazione(cf, nome, cognome, codPrenotazione, dataInizio, dataFine, prezzoTotale));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return storicoPrenotazioni;
     }
 
 }
