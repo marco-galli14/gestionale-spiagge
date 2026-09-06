@@ -2,9 +2,14 @@ package dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import common.StoricoNoleggio;
 
 public class NoleggioAttrezzaturaDao {
 
@@ -71,4 +76,36 @@ public class NoleggioAttrezzaturaDao {
             return false;
         }
     }
+
+    public List<StoricoNoleggio> getStoricoNoleggi() {
+
+        List<StoricoNoleggio> storicoNoleggi = new ArrayList<>();
+
+        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.OraInizio, n.DurataOre, n.CostoTotale " +
+                        "FROM cliente c, noleggio_attrezzatura n " +
+                        "WHERE c.CF = n.CF";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String cf = rs.getString("CF");
+                String nome = rs.getString("Nome");
+                String cognome = rs.getString("Cognome");
+                String codNoleggio = rs.getString("CodNoleggio");
+                LocalDate dataNoleggio = rs.getDate("DataNoleggio").toLocalDate();
+                LocalTime oraInizio = rs.getTime("OraInizio").toLocalTime();
+                int durataOre = rs.getInt("DurataOre");
+                int costoTotale = rs.getInt("CostoTotale");
+
+                storicoNoleggi.add(new StoricoNoleggio(cf, nome, cognome, codNoleggio, dataNoleggio, oraInizio, durataOre, costoTotale));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return storicoNoleggi;
+    }
+
 }
