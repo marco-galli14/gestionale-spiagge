@@ -13,16 +13,13 @@ import common.StoricoNoleggio;
 
 public class NoleggioAttrezzaturaDAO {
 
-    // IL NUOVO METODO: Ritorna String (il codice autogenerato) e prende solo 6 parametri (senza codNoleggio)
-    public String inserisciNoleggioAttrezzatura(LocalDate dataNoleggio, LocalTime oraInizio, 
-                                                   int durataOre, String cf, String codDipendente, String codAttrezzatura) {
+    public int inserisciNoleggioAttrezzatura(LocalDate dataNoleggio, LocalTime oraInizio, 
+                                            int durataOre, String cf, String codDipendente, String codAttrezzatura) {
         
-        // Rimosso CodNoleggio: ci pensa il database tramite AUTO_INCREMENT!
         String query = "INSERT INTO noleggio_attrezzatura (DataNoleggio, OraInizio, DurataOre, CostoTotale, CF, CodPrenotazione, CodDipendente, CodAttrezzatura) " +
                        "VALUES (?, ?, ?, '00.00', ?, (SELECT CodPrenotazione FROM Prenotazione WHERE CF = ? AND ? BETWEEN DataInizio AND DataFine LIMIT 1), ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             // RETURN_GENERATED_KEYS serve per farci restituire dal DB l'ID appena creato
              PreparedStatement pstmt = conn.prepareStatement(query, java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setDate(1, java.sql.Date.valueOf(dataNoleggio));
@@ -35,10 +32,9 @@ public class NoleggioAttrezzaturaDAO {
             pstmt.setString(8, codAttrezzatura);
 
             if (pstmt.executeUpdate() > 0) {
-                // Recuperiamo il numero autoincrementato e lo trasformiamo in stringa
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
                     if (rs.next()) {
-                        return String.valueOf(rs.getInt(1));
+                        return rs.getInt(1);
                     }
                 }
             }
@@ -46,10 +42,10 @@ public class NoleggioAttrezzaturaDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null;
+        return -1;
     }
 
-    public boolean aggiornaCostoTotaleNoleggio(String codNoleggio) {
+    public boolean aggiornaCostoTotaleNoleggio(int codNoleggio) {
         String query = "UPDATE noleggio_attrezzatura n, attrezzatura a, tariffa_noleggio t, stagione s " +
                        "SET n.CostoTotale = n.DurataOre * t.TariffaOraria " +
                        "WHERE n.CodAttrezzatura = a.CodAttrezzatura " +
@@ -61,7 +57,7 @@ public class NoleggioAttrezzaturaDAO {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, codNoleggio);
+            pstmt.setInt(1, codNoleggio);
 
             return pstmt.executeUpdate() > 0;
 
@@ -71,13 +67,13 @@ public class NoleggioAttrezzaturaDAO {
         }
     }
 
-    public boolean eliminaNoleggioAttrezzatura(String codNoleggio) {
+    public boolean eliminaNoleggioAttrezzatura(int codNoleggio) {
         String query = "DELETE FROM noleggio_attrezzatura WHERE CodNoleggio = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, codNoleggio);
+            pstmt.setInt(1, codNoleggio);
 
             return pstmt.executeUpdate() > 0;
 
@@ -88,10 +84,9 @@ public class NoleggioAttrezzaturaDAO {
     }
 
     public List<StoricoNoleggio> getStoricoNoleggi() {
-
         List<StoricoNoleggio> storicoNoleggi = new ArrayList<>();
 
-        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.codAttrezzatura,n.OraInizio, n.DurataOre, n.CostoTotale " +
+        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.codAttrezzatura, n.OraInizio, n.DurataOre, n.CostoTotale " +
                         "FROM cliente c, noleggio_attrezzatura n " +
                         "WHERE c.CF = n.CF";
 

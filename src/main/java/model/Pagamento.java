@@ -8,13 +8,13 @@ public class Pagamento {
     private int importo;
     private LocalDate dataPagamento;
     private String metodoPagamento;
-    private String codNoleggio;
+    private Integer codNoleggio; // Aggiornato a Integer
     private Integer codPrenotazione;
 
     public Pagamento() {
     }
 
-    public Pagamento(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, String codNoleggio, Integer codPrenotazione) {
+    public Pagamento(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, Integer codNoleggio, Integer codPrenotazione) {
         this.codPagamento = codPagamento;
         this.importo = importo;
         this.dataPagamento = dataPagamento;
@@ -55,11 +55,11 @@ public class Pagamento {
         this.metodoPagamento = metodoPagamento;
     }
 
-    public String getCodNoleggio() {
+    public Integer getCodNoleggio() { // Restituisce Integer
         return codNoleggio;
     }
 
-    public void setCodNoleggio(String codNoleggio) {
+    public void setCodNoleggio(Integer codNoleggio) { // Accetta Integer
         this.codNoleggio = codNoleggio;
     }
 

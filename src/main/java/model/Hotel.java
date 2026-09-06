@@ -6,7 +6,6 @@ public class Hotel {
     private int scontoHotel;
 
     public Hotel() {
-
     }
 
     public Hotel(int codHotel, String nomeHotel, int scontoHotel) {
@@ -23,7 +22,7 @@ public class Hotel {
         return nomeHotel;
     }
 
-    public float getScontoHotel() {
+    public int getScontoHotel() { // Corretto da float a int
         return scontoHotel;
     }
 

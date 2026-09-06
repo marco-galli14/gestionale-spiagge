@@ -21,7 +21,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import model.Dipendente;
@@ -33,30 +32,24 @@ public class MainView {
     private final Stage stage;
     private GridPane gridOmbrelloni;
     
-    // --- COMPONENTI PER LA SELEZIONE DATA/ORA IN ALTO A SINISTRA ---
     private DatePicker datePickerPrincipale;
     private TextField txtOraPrincipale;
     
-    // --- SCENE PER IL SINGLE PAGE APP ---
     private Scene scenaPrincipale;
     private Scene scenaMenuAttrezzature;
     private Scene scenaMenuCampi;
     private Scene scenaMenuOmbrelloni;
     
-    // Mappa per tracciare i bottoni dei campi tramite il loro codice (C1, C2, ...)
     private final Map<String, Button> bottoniCampiMap = new HashMap<>();
-    
-    // Variabile per salvare lo storico aggiornato
     private List<StoricoNoleggio> listaStoricoNoleggiAttuali = new ArrayList<>();
 
-    // --- CALLBACK / HANDLER PER IL CONTROLLER ---
     private Consumer<Integer> onCellaOmbrelloneClicked;
     private BiConsumer<LocalDate, LocalTime> onCambioDataOraMappa;
     private OnSalvaClienteListener onSalvaClienteAction;
     private BiConsumer<String, Integer> onAssegnaGruppoCliente;
     private OnCreaPrenotazioneListener onCreaPrenotazioneAction;
     private OnCreaNoleggioListener onCreaNoleggioAction;
-    private Consumer<String> onEliminaNoleggioAction;
+    private Consumer<Integer> onEliminaNoleggioAction;
     private BiConsumer<LocalDate, LocalTime> onVerificaCampiAction;
     private OnCreaPrenotazioneCampoListener onCreaPrenotazioneCampoAction;
     private Consumer<Integer> onEliminaPrenotazioneCampoAction;
@@ -65,6 +58,7 @@ public class MainView {
     private BiConsumer<LocalDate, LocalDate> onRichiediOccupazioneZone;
     private Consumer<LocalDate> onGeneraReportGiornaliero;
     private Runnable onRichiediStoricoPrenotazioni;
+    private Consumer<Integer> onEliminaPrenotazioneSpiaggiaAction;
 
     @FunctionalInterface
     public interface OnSalvaClienteListener {
@@ -72,7 +66,7 @@ public class MainView {
     }
     @FunctionalInterface
     public interface OnCreaPrenotazioneListener {
-        void onCrea(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine, int codDipendente, String cf);
+        void onCrea(LocalDate dataInizio, LocalDate dataFine, int codDipendente, String cf);
     }
     @FunctionalInterface
     public interface OnCreaNoleggioListener {
@@ -84,21 +78,20 @@ public class MainView {
     }
     @FunctionalInterface
     public interface OnRegistraPagamentoListener {
-        void onRegistra(String codPag, int importo, LocalDate data, String metodo, String codPren);
+        void onRegistra(String codPag, int importo, LocalDate data, String metodo, int codPren);
     }
 
     public MainView(Stage stage) {
         this.stage = stage;
     }
 
-    // --- SETTER ---
     public void setOnCellaOmbrelloneClicked(Consumer<Integer> listener) { this.onCellaOmbrelloneClicked = listener; }
     public void setOnCambioDataOraMappa(BiConsumer<LocalDate, LocalTime> listener) { this.onCambioDataOraMappa = listener; }
     public void setOnSalvaClienteAction(OnSalvaClienteListener listener) { this.onSalvaClienteAction = listener; }
     public void setOnAssegnaGruppoCliente(BiConsumer<String, Integer> listener) { this.onAssegnaGruppoCliente = listener; }
     public void setOnCreaPrenotazioneAction(OnCreaPrenotazioneListener listener) { this.onCreaPrenotazioneAction = listener; }
     public void setOnCreaNoleggioAction(OnCreaNoleggioListener listener) { this.onCreaNoleggioAction = listener; }
-    public void setOnEliminaNoleggioAction(Consumer<String> listener) { this.onEliminaNoleggioAction = listener; }
+    public void setOnEliminaNoleggioAction(Consumer<Integer> listener) { this.onEliminaNoleggioAction = listener; }
     public void setOnVerificaCampiAction(BiConsumer<LocalDate, LocalTime> listener) { this.onVerificaCampiAction = listener; }
     public void setOnCreaPrenotazioneCampoAction(OnCreaPrenotazioneCampoListener listener) { this.onCreaPrenotazioneCampoAction = listener; }
     public void setOnEliminaPrenotazioneCampoAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneCampoAction = listener; }
@@ -107,13 +100,13 @@ public class MainView {
     public void setOnRichiediOccupazioneZone(BiConsumer<LocalDate, LocalDate> listener) { this.onRichiediOccupazioneZone = listener; }
     public void setOnGeneraReportGiornaliero(Consumer<LocalDate> listener) { this.onGeneraReportGiornaliero = listener; }
     public void setOnRichiediStoricoPrenotazioni(Runnable listener) { this.onRichiediStoricoPrenotazioni = listener; }
+    public void setOnEliminaPrenotazioneSpiaggiaAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneSpiaggiaAction = listener; }
 
     public void mostraFinestra() {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #f8f9fa;");
         root.setPadding(new Insets(15));
 
-        // --- BARRA SUPERIORE CON CALENDARIO E ORA PULITA ---
         HBox topBar = creaBarraSelezioneDataOra();
         root.setTop(topBar);
 
@@ -127,7 +120,6 @@ public class MainView {
         root.setRight(creaPannelloDestro());
 
         this.scenaPrincipale = new Scene(root, 950, 650);
-        
         stage.setTitle("Mappa Stabilimento Balneare - Lido");
         stage.setScene(scenaPrincipale);
         stage.setMinWidth(850);
@@ -229,10 +221,6 @@ public class MainView {
         }
     }
 
-    // =====================================================================
-    // --- GESTIONE VISTE E SCENE ---
-    // =====================================================================
-
     public void cambiaScenaOmbrelloni() {
         VBox layout = new VBox(15);
         layout.setPadding(new Insets(30));
@@ -256,7 +244,6 @@ public class MainView {
         btnIndietro.setPrefSize(180, 38);
         btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
 
-        // Azioni collegate ai form/viste dedicati
         btnInserisciPren.setOnAction(e -> mostraFormInserisciPrenotazione());
         btnEliminaPren.setOnAction(e -> mostraFormEliminaPrenotazione());
         btnStoricoPren.setOnAction(e -> {
@@ -268,7 +255,6 @@ public class MainView {
         btnAddAllestimento.setOnAction(e -> mostraFormAggiungiAllestimento());
         btnAggiornaAllestimento.setOnAction(e -> mostraFormAggiornaAllestimento());
         btnDelAllestimento.setOnAction(e -> mostraFormEliminaAllestimento());
-        
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
 
         VBox contentBox = new VBox(12, titolo, btnInserisciPren, btnEliminaPren, btnStoricoPren, 
@@ -307,7 +293,6 @@ public class MainView {
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
 
         layout.getChildren().addAll(titolo, btnAggiungi, btnStorico, btnElimina, btnIndietro);
-        
         this.scenaMenuAttrezzature = new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight());
         stage.setScene(scenaMenuAttrezzature);
     }
@@ -333,40 +318,37 @@ public class MainView {
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
 
         layout.getChildren().addAll(titolo, btnInserisci, btnElimina, btnIndietro);
-        
         this.scenaMenuCampi = new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight());
         stage.setScene(scenaMenuCampi);
     }
 
-    // --- FORM DEDICATI PER OMBRELLONI ---
     private void mostraFormInserisciPrenotazione() {
         GridPane grid = new GridPane();
-        grid.setVgap(10); grid.setHgap(10);
+        grid.setVgap(12); grid.setHgap(15);
         grid.setAlignment(Pos.CENTER);
 
         DatePicker dpInizio = new DatePicker(LocalDate.now());
         DatePicker dpFine = new DatePicker(LocalDate.now().plusDays(7));
-        TextField txtCodPren = new TextField();
         TextField txtCf = new TextField();
         TextField txtDip = new TextField();
 
-        grid.add(new Label("Codice Prenotazione:"), 0, 0); grid.add(txtCodPren, 1, 0);
-        grid.add(new Label("Data Inizio:"), 0, 1);         grid.add(dpInizio, 1, 1);
-        grid.add(new Label("Data Fine:"), 0, 2);           grid.add(dpFine, 1, 2);
-        grid.add(new Label("CF Cliente:"), 0, 3);          grid.add(txtCf, 1, 3);
-        grid.add(new Label("Cod. Dipendente:"), 0, 4);     grid.add(txtDip, 1, 4);
+        grid.add(new Label("Data Inizio:"), 0, 0);      grid.add(dpInizio, 1, 0);
+        grid.add(new Label("Data Fine:"), 0, 1);          grid.add(dpFine, 1, 1);
+        grid.add(new Label("CF Cliente:"), 0, 2);         grid.add(txtCf, 1, 2);
+        grid.add(new Label("Cod. Dipendente:"), 0, 3);    grid.add(txtDip, 1, 3);
 
-        Button btnSalva = new Button("Procedi a Seleziona Ombrelloni");
+        Button btnSalva = new Button("Salva Prenotazione");
+        btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnSalva.setOnAction(e -> {
             if (onCreaPrenotazioneAction != null) {
                 try {
                     onCreaPrenotazioneAction.onCrea(
-                        txtCodPren.getText(),
                         dpInizio.getValue(),
                         dpFine.getValue(),
                         Integer.parseInt(txtDip.getText()),
                         txtCf.getText()
                     );
+                    stage.setScene(scenaMenuOmbrelloni);
                 } catch (Exception ex) {
                     mostraMessaggioEsito(false, "", "Controlla i dati inseriti (es. dipendente numerico).");
                 }
@@ -374,10 +356,16 @@ public class MainView {
         });
 
         Button btnIndietro = new Button("Indietro");
+        btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
 
-        VBox layout = new VBox(20, new Label("INSERISCI NUOVA PRENOTAZIONE"), grid, new HBox(10, btnSalva, btnIndietro));
+        // CORRETTO: HBox centrato per i pulsanti del form
+        HBox boxBottoni = new HBox(15, btnSalva, btnIndietro);
+        boxBottoni.setAlignment(Pos.CENTER);
+
+        VBox layout = new VBox(25, new Label("INSERISCI NUOVA PRENOTAZIONE"), grid, boxBottoni);
         layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(30));
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
@@ -387,15 +375,28 @@ public class MainView {
         TextField txtCod = new TextField();
         txtCod.setMaxWidth(200);
 
-        Button btnElimina = new Button("Elimina Prenotazione");
+        Button btnElimina = new Button("Elimina Definitivamente");
         btnElimina.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
-        btnElimina.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        btnElimina.setOnAction(e -> {
+            try {
+                if (onEliminaPrenotazioneSpiaggiaAction != null) {
+                    onEliminaPrenotazioneSpiaggiaAction.accept(Integer.parseInt(txtCod.getText()));
+                    stage.setScene(scenaMenuOmbrelloni);
+                }
+            } catch (NumberFormatException ex) {
+                mostraMessaggioEsito(false, "", "Il codice prenotazione deve essere un numero intero.");
+            }
+        });
 
         Button btnIndietro = new Button("Annulla");
         btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
 
-        layout.getChildren().addAll(new Label("Codice Prenotazione da eliminare:"), txtCod, btnElimina, btnIndietro);
+        layout.getChildren().addAll(new Label("Inserisci Codice Numerico della Prenotazione da eliminare:"), txtCod, new HBox(10, btnElimina, btnIndietro) {{ AlignmentPosCenter(this); }});
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+    
+    private void AlignmentPosCenter(HBox hbox) {
+        hbox.setAlignment(Pos.CENTER);
     }
 
     private void mostraFormAggiungiGiornaliera() {
@@ -452,10 +453,9 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    // --- 1. VISTA AGGIUNGI NOLEGGIO ---
     private void mostraFormAggiungiNoleggio() {
         GridPane grid = new GridPane();
-        grid.setVgap(10); grid.setHgap(10);
+        grid.setVgap(12); grid.setHgap(15);
         grid.setAlignment(Pos.CENTER);
 
         DatePicker datePicker = new DatePicker(LocalDate.now());
@@ -476,6 +476,7 @@ public class MainView {
         grid.add(new Label("Attrezzatura:"), 0, 5);    grid.add(cmbAttrezzatura, 1, 5);
 
         Button btnSalva = new Button("Salva Noleggio");
+        btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnSalva.setOnAction(e -> {
             try {
                 if(onCreaNoleggioAction != null) {
@@ -491,19 +492,21 @@ public class MainView {
         });
 
         Button btnAnnulla = new Button("Indietro");
+        btnAnnulla.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         btnAnnulla.setOnAction(e -> stage.setScene(scenaMenuAttrezzature));
 
-        HBox buttons = new HBox(10, btnSalva, btnAnnulla);
+        HBox buttons = new HBox(15, btnSalva, btnAnnulla);
         buttons.setAlignment(Pos.CENTER);
         
-        VBox layout = new VBox(20, new Label("INSERISCI NUOVO NOLEGGIO"), grid, buttons);
+        VBox layout = new VBox(25, new Label("INSERISCI NUOVO NOLEGGIO"), grid, buttons);
         layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(30));
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
     private void mostraFormAggiungiPrenotazioneCampo() {
         GridPane grid = new GridPane();
-        grid.setVgap(10); grid.setHgap(10);
+        grid.setVgap(12); grid.setHgap(15);
         grid.setAlignment(Pos.CENTER);
 
         DatePicker datePicker = new DatePicker(LocalDate.now());
@@ -518,13 +521,14 @@ public class MainView {
         TextField txtCodDip = new TextField();
 
         grid.add(new Label("Data Prenotazione:"), 0, 0);   grid.add(datePicker, 1, 0);
-        grid.add(new Label("Seleziona Campo:"), 0, 1);       grid.add(cmbCampo, 1, 1);
+        grid.add(new Label("Seleziona Campo:"), 0, 1);      grid.add(cmbCampo, 1, 1);
         grid.add(new Label("Ora Inizio (HH:mm):"), 0, 2); grid.add(txtOraInizio, 1, 2);
         grid.add(new Label("Ora Fine (HH:mm):"), 0, 3);   grid.add(txtOraFine, 1, 3);
         grid.add(new Label("CF Cliente:"), 0, 4);          grid.add(txtCf, 1, 4);
-        grid.add(new Label("Cod. Dipendente:"), 0, 5);     grid.add(txtCodDip, 1, 5);
+        grid.add(new Label("Cod. Dipendente:"), 0, 5);    grid.add(txtCodDip, 1, 5);
 
         Button btnSalva = new Button("Salva Prenotazione Campo");
+        btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnSalva.setOnAction(e -> {
             try {
                 String nomeSelezionato = cmbCampo.getValue();
@@ -553,13 +557,15 @@ public class MainView {
         });
 
         Button btnAnnulla = new Button("Indietro");
+        btnAnnulla.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         btnAnnulla.setOnAction(e -> stage.setScene(scenaMenuCampi));
 
-        HBox buttons = new HBox(10, btnSalva, btnAnnulla);
+        HBox buttons = new HBox(15, btnSalva, btnAnnulla);
         buttons.setAlignment(Pos.CENTER);
 
-        VBox layout = new VBox(20, new Label("INSERISCI PRENOTAZIONE CAMPO"), grid, buttons);
+        VBox layout = new VBox(25, new Label("INSERISCI PRENOTAZIONE CAMPO"), grid, buttons);
         layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(30));
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
@@ -588,13 +594,12 @@ public class MainView {
 
         layout.getChildren().addAll(
             new Label("Inserisci il Codice Numerico della Prenotazione Campo da eliminare:"),
-            txtCod, btnElimina, btnIndietro
+            txtCod, new HBox(10, btnElimina, btnIndietro) {{ AlignmentPosCenter(this); }}
         );
 
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    // --- 2. VISTA STORICO NOLEGGI ---
     private void mostraStoricoNoleggi() {
         TableView<StoricoNoleggio> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -647,8 +652,8 @@ public class MainView {
         TableView<StoricoPrenotazione> table = new TableView<>();
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        TableColumn<StoricoPrenotazione, String> colCod = new TableColumn<>("Cod Prenotazione");
-        colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().codPrenotazione()));
+        TableColumn<StoricoPrenotazione, Integer> colCod = new TableColumn<>("Cod Prenotazione");
+        colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().codPrenotazione()));
 
         TableColumn<StoricoPrenotazione, LocalDate> colInizio = new TableColumn<>("Data Inizio");
         colInizio.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().dataInizio()));
@@ -678,7 +683,6 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    // --- 3. VISTA ELIMINA NOLEGGIO ---
     private void mostraFormEliminaNoleggio() {
         VBox layout = new VBox(15);
         layout.setAlignment(Pos.CENTER);
@@ -689,9 +693,13 @@ public class MainView {
         Button btnElimina = new Button("Elimina Definitivamente");
         btnElimina.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
         btnElimina.setOnAction(e -> {
-            if (onEliminaNoleggioAction != null) {
-                onEliminaNoleggioAction.accept(txtCod.getText());
-                stage.setScene(scenaMenuAttrezzature);
+            try {
+                if (onEliminaNoleggioAction != null) {
+                    onEliminaNoleggioAction.accept(Integer.parseInt(txtCod.getText()));
+                    stage.setScene(scenaMenuAttrezzature);
+                }
+            } catch (NumberFormatException ex) {
+                mostraMessaggioEsito(false, "", "Il codice noleggio deve essere un numero intero.");
             }
         });
 
@@ -700,15 +708,11 @@ public class MainView {
 
         layout.getChildren().addAll(
             new Label("Inserisci il Codice Numerico del Noleggio da eliminare:"),
-            txtCod, btnElimina, btnIndietro
+            txtCod, new HBox(10, btnElimina, btnIndietro) {{ AlignmentPosCenter(this); }}
         );
 
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
-
-    // =====================================================================
-    // --- METODI DI FEEDBACK E AGGIORNAMENTO UI ---
-    // =====================================================================
 
     public void mostraMessaggioEsito(boolean successo, String msgSuccesso, String msgErrore) {
         Alert alert = new Alert(successo ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR);
@@ -726,7 +730,7 @@ public class MainView {
         impostaTabellaNoleggi(storico);
     }
 
-    public void mostraDettagliPrenotazioneCella(String codZona, String nomeZona, String codPrenotazione, String clientePrenotato) { 
+    public void mostraDettagliPrenotazioneCella(String codZona, String nomeZona, int codPrenotazione, String clientePrenotato) { 
         cambiaScenaOmbrelloni();
     }
     

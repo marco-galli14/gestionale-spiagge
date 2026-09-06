@@ -3,12 +3,12 @@ package model;
 public class TariffaNoleggio {
     private String codStagione;
     private String codAttrezzatura;
-    private Integer tariffaOraria;
+    private int tariffaOraria; // Convertito a int primitivo
 
     public TariffaNoleggio() {
     }
 
-    public TariffaNoleggio(String codStagione, String codAttrezzatura, Integer tariffaOraria) {
+    public TariffaNoleggio(String codStagione, String codAttrezzatura, int tariffaOraria) {
         this.codStagione = codStagione;
         this.codAttrezzatura = codAttrezzatura;
         this.tariffaOraria = tariffaOraria;
@@ -30,11 +30,11 @@ public class TariffaNoleggio {
         this.codAttrezzatura = codAttrezzatura;
     }
 
-    public Integer getTariffaOraria() {
+    public int getTariffaOraria() {
         return tariffaOraria;
     }
 
-    public void setTariffaOraria(Integer tariffaOraria) {
+    public void setTariffaOraria(int tariffaOraria) {
         this.tariffaOraria = tariffaOraria;
     }
 

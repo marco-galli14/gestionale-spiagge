@@ -5,7 +5,6 @@ public class Gruppo {
     private int scontoGruppo;
 
     public Gruppo() {
-
     }
 
     public Gruppo(int idGruppo, int scontoGruppo) {
@@ -17,7 +16,7 @@ public class Gruppo {
         return idGruppo;
     }
 
-    public float getScontoGruppo() {
+    public int getScontoGruppo() { // Corretto da float a int
         return scontoGruppo;
     }
 
@@ -55,5 +54,4 @@ public class Gruppo {
     public String toString() {
         return "Gruppo [idGruppo=" + idGruppo + ", scontoGruppo=" + scontoGruppo + "]";
     }
-    
 }

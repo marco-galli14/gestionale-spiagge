@@ -57,7 +57,7 @@ public class MappaDAO {
                         rs.getInt("Numero"),
                         rs.getString("CodZona"),
                         rs.getString("NomeZona"),
-                        rs.getInt("CodPrenotazione"),
+                        rs.getObject("CodPrenotazione", Integer.class), // CORRETTO: Gestisce correttamente il NULL come null di Java
                         rs.getString("ClientePrenotato")
                     ));
                 }
@@ -82,7 +82,7 @@ public class MappaDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     PrenotazioneCampo pc = new PrenotazioneCampo(
-                        rs.getInt("CodPrenotazioneCampo"), // <-- Corretto con il nome giusto della colonna
+                        rs.getInt("CodPrenotazioneCampo"),
                         rs.getDate("DataPrenotazione").toLocalDate(),
                         rs.getTime("OraInizio").toLocalTime(),
                         rs.getTime("OraFine").toLocalTime(),

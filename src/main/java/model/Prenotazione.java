@@ -7,8 +7,8 @@ public class Prenotazione {
     private int codPrenotazione;
     private LocalDate dataInizio;
     private LocalDate dataFine;
-    private int PrezzoTotale;
-    private boolean statoPagmento;
+    private int prezzoTotale;
+    private boolean statoPagamento; // Corretto il typo da statoPagmento
     private int codDipendente;
     private String cf;
     private String codPacchetto;
@@ -17,13 +17,13 @@ public class Prenotazione {
     public Prenotazione() {
     }
 
-    public Prenotazione(int codPrenotazione, LocalDate dataInizio, LocalDate dataFine,int prezzoTotale,
-            boolean statoPagmento, int codDipendente, String cf, String codPacchetto, Integer idGruppo) {
+    public Prenotazione(int codPrenotazione, LocalDate dataInizio, LocalDate dataFine, int prezzoTotale,
+            boolean statoPagamento, int codDipendente, String cf, String codPacchetto, Integer idGruppo) {
         this.codPrenotazione = codPrenotazione;
         this.dataInizio = dataInizio;
         this.dataFine = dataFine;
-        this.PrezzoTotale = prezzoTotale;
-        this.statoPagmento = statoPagmento;
+        this.prezzoTotale = prezzoTotale;
+        this.statoPagamento = statoPagamento;
         this.codDipendente = codDipendente;
         this.cf = cf;
         this.codPacchetto = codPacchetto;
@@ -55,19 +55,19 @@ public class Prenotazione {
     }
 
     public int getPrezzoTotale() {
-        return PrezzoTotale;
+        return prezzoTotale;
     }
 
     public void setPrezzoTotale(int prezzoTotale) {
-        PrezzoTotale = prezzoTotale;
+        this.prezzoTotale = prezzoTotale;
     }
 
-    public boolean getStatoPagmento() {
-        return statoPagmento;
+    public boolean getStatoPagamento() {
+        return statoPagamento;
     }
 
-    public void setStatoPagmento(boolean statoPrenotazione) {
-        statoPagmento = statoPrenotazione;
+    public void setStatoPagamento(boolean statoPagamento) {
+        this.statoPagamento = statoPagamento;
     }
 
     public int getCodDipendente() {
@@ -101,5 +101,4 @@ public class Prenotazione {
     public void setIdGruppo(Integer idGruppo) {
         this.idGruppo = idGruppo;
     }
-
 }

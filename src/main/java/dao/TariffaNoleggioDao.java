@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 public class TariffaNoleggioDAO {
 
-    public boolean inserisciTariffaNoleggio(String codStagione, String codAttrezzatura, double tariffaOraria) {
+    public boolean inserisciTariffaNoleggio(String codStagione, String codAttrezzatura, int tariffaOraria) {
         String query = "INSERT INTO tariffa_noleggio (CodStagione, CodAttrezzatura, TariffaOraria) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -14,7 +14,7 @@ public class TariffaNoleggioDAO {
 
             pstmt.setString(1, codStagione);
             pstmt.setString(2, codAttrezzatura);
-            pstmt.setDouble(3, tariffaOraria);
+            pstmt.setInt(3, tariffaOraria); // Aggiornato a setInt
 
             return pstmt.executeUpdate() > 0;
 

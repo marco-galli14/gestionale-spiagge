@@ -1,15 +1,16 @@
 package model;
 
-import java.util.Date;
+import java.time.LocalDate;
+
 public class Stagione {
     private String codStagione;
-    private Date dataInizio;
-    private Date dataFine;
+    private LocalDate dataInizio;
+    private LocalDate dataFine;
 
     public Stagione() {
     }
 
-    public Stagione(String codStagione, Date dataInizio, Date dataFine) {
+    public Stagione(String codStagione, LocalDate dataInizio, LocalDate dataFine) {
         this.codStagione = codStagione;
         this.dataInizio = dataInizio;
         this.dataFine = dataFine;
@@ -23,19 +24,19 @@ public class Stagione {
         this.codStagione = codStagione;
     }
 
-    public Date getDataInizio() {
+    public LocalDate getDataInizio() {
         return dataInizio;
     }
 
-    public void setDataInizio(Date dataInizio) {
+    public void setDataInizio(LocalDate dataInizio) {
         this.dataInizio = dataInizio;
     }
 
-    public Date getDataFine() {
+    public LocalDate getDataFine() {
         return dataFine;
     }
 
-    public void setDataFine(Date dataFine) {
+    public void setDataFine(LocalDate dataFine) {
         this.dataFine = dataFine;
     }
 

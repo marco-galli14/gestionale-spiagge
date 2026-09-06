@@ -8,19 +8,19 @@ import java.util.List;
 public class ZonaDAO {
 
     public static class ZonaOccupazioneInfo {
-        private final String codZona;
+        private final int codZona; // Aggiornato a int
         private final int ombrelloniOccupati;
         private final int capienzaMassima;
         private final double percentualeOccupazione;
 
-        public ZonaOccupazioneInfo(String codZona, int ombrelloniOccupati, int capienzaMassima, double percentualeOccupazione) {
+        public ZonaOccupazioneInfo(int codZona, int ombrelloniOccupati, int capienzaMassima, double percentualeOccupazione) {
             this.codZona = codZona;
             this.ombrelloniOccupati = ombrelloniOccupati;
             this.capienzaMassima = capienzaMassima;
             this.percentualeOccupazione = percentualeOccupazione;
         }
 
-        public String getCodZona() { return codZona; }
+        public int getCodZona() { return codZona; }
         public int getOmbrelloniOccupati() { return ombrelloniOccupati; }
         public int getCapienzaMassima() { return capienzaMassima; }
         public double getPercentualeOccupazione() { return percentualeOccupazione; }
@@ -54,7 +54,7 @@ public class ZonaDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     risultati.add(new ZonaOccupazioneInfo(
-                        rs.getString("CodZona"),
+                        rs.getInt("CodZona"), // Aggiornato a getInt
                         rs.getInt("OmbrelloniOccupati"),
                         rs.getInt("CapienzaMassimaMese"),
                         rs.getDouble("PercentualeOccupazione")

@@ -1,20 +1,20 @@
 package model;
 
 public class Zona {
-    private String codZona;
+    private int codZona;
     private String nomeZona;
     private String descrizione;
     
     public Zona() {
     }
 
-    public Zona(String codZona, String nomeZona, String descrizione) {
+    public Zona(int codZona, String nomeZona, String descrizione) {
         this.codZona = codZona;
         this.nomeZona = nomeZona;
         this.descrizione = descrizione;
     }
 
-    public String getCodZona() {
+    public int getCodZona() {
         return codZona;
     }
 
@@ -26,7 +26,7 @@ public class Zona {
         return descrizione;
     }
 
-    public void setCodZona(String codZona) {
+    public void setCodZona(int codZona) {
         this.codZona = codZona;
     }
 
@@ -42,7 +42,7 @@ public class Zona {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((codZona == null) ? 0 : codZona.hashCode());
+        result = prime * result + codZona;
         return result;
     }
 
@@ -55,10 +55,7 @@ public class Zona {
         if (getClass() != obj.getClass())
             return false;
         Zona other = (Zona) obj;
-        if (codZona == null) {
-            if (other.codZona != null)
-                return false;
-        } else if (!codZona.equals(other.codZona))
+        if (codZona != other.codZona)
             return false;
         return true;
     }
@@ -67,5 +64,4 @@ public class Zona {
     public String toString() {
         return "Zona [codZona=" + codZona + ", nomeZona=" + nomeZona + ", descrizione=" + descrizione + "]";
     }
-
 }

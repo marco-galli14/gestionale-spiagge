@@ -32,7 +32,8 @@ public class PagamentoDAO {
             }
     }
 
-    public boolean insertPagamentoNoleggio(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, String codNoleggio) {
+    // Aggiornato codNoleggio da String a int
+    public boolean insertPagamentoNoleggio(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, int codNoleggio) {
         
         String query = "INSERT INTO PAGAMENTO (CodPagamento, DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
                         "VALUES (?, ?, ?, ?, NULL, ?)";
@@ -44,7 +45,7 @@ public class PagamentoDAO {
                     ps.setDate(2, java.sql.Date.valueOf(dataPagamento));
                     ps.setInt(3, importo);
                     ps.setString(4, metodoPagamento);
-                    ps.setString(5, codNoleggio);
+                    ps.setInt(5, codNoleggio); // Utilizza setInt
     
                     int rowsAffected = ps.executeUpdate();
                     return rowsAffected > 0;
@@ -86,5 +87,4 @@ public class PagamentoDAO {
                 return new Pair<>(0, 0);
             }
     }
-    
 }

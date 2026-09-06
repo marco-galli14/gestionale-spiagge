@@ -11,7 +11,7 @@ public class PrenotazioneCampo {
     private LocalTime oraFine;
     private String cf;
     private String codCampo;
-    private int CodDipendente;
+    private int codDipendente; // Corretto da CodDipendente a codDipendente
 
     public PrenotazioneCampo() {
     }
@@ -23,7 +23,7 @@ public class PrenotazioneCampo {
         this.oraFine = oraFine;
         this.cf = cf;
         this.codCampo = codCampo;
-        CodDipendente = codDipendente;
+        this.codDipendente = codDipendente;
     }
 
     public int getCodPrenotazioneCampo() {
@@ -75,11 +75,10 @@ public class PrenotazioneCampo {
     }
 
     public int getCodDipendente() {
-        return CodDipendente;
+        return codDipendente;
     }
 
     public void setCodDipendente(int codDipendente) {
-        CodDipendente = codDipendente;
+        this.codDipendente = codDipendente;
     }
-
 }

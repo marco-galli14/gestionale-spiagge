@@ -70,15 +70,25 @@ public final class MainController {
             view.mostraMessaggioEsito(ok, "Gruppo assegnato con successo!", "Errore nell'assegnazione del gruppo.");
         });
 
-        view.setOnCreaPrenotazioneAction((codPrenotazione, dataInizio, dataFine, codDipendente, cf) -> {
-            boolean creata = prenotazioneDao.addPrenotazione(codPrenotazione, dataInizio, dataFine, codDipendente, cf);
-            if (creata) {
-                prenotazioneDao.updatePacchettoSconto(codPrenotazione);
-                prenotazioneDao.updateCostoTotale(codPrenotazione);
+        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf) -> {
+            int nuovoCodice = prenotazioneDao.addPrenotazione(dataInizio, dataFine, codDipendente, cf);
+            if (nuovoCodice > 0) {
+                prenotazioneDao.updatePacchettoSconto(nuovoCodice);
+                prenotazioneDao.updateCostoTotale(nuovoCodice);
                 view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
-                view.mostraMessaggioEsito(true, "Prenotazione " + codPrenotazione + " creata con successo!", "");
+                view.mostraMessaggioEsito(true, "Prenotazione creata con successo! Codice: " + nuovoCodice, "");
             } else {
                 view.mostraMessaggioEsito(false, "", "Errore nella creazione della prenotazione.");
+            }
+        });
+
+        view.setOnEliminaPrenotazioneSpiaggiaAction(codPren -> {
+            boolean eliminata = prenotazioneDao.eliminaPrenotazione(codPren);
+            if (eliminata) {
+                view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
+                view.mostraMessaggioEsito(true, "Prenotazione " + codPren + " eliminata con successo!", "");
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore: Prenotazione non trovata.");
             }
         });
 
@@ -88,14 +98,14 @@ public final class MainController {
         });
 
         view.setOnCreaNoleggioAction((data, oraInizio, durata, cf, codDipendente, codAttrezzatura) -> {
-            String codGenerato = noleggioAttrezzaturaDao.inserisciNoleggioAttrezzatura(data, oraInizio, durata, cf, codDipendente, codAttrezzatura);
+            int codGenerato = noleggioAttrezzaturaDao.inserisciNoleggioAttrezzatura(data, oraInizio, durata, cf, codDipendente, codAttrezzatura);
             
-            if (codGenerato != null) {
+            if (codGenerato > 0) {
                 noleggioAttrezzaturaDao.aggiornaCostoTotaleNoleggio(codGenerato);
                 view.aggiornaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
                 view.mostraMessaggioEsito(true, "Noleggio inserito! Codice assegnato: " + codGenerato, "");
             } else {
-                view.mostraMessaggioEsito(false, "", "Errore: Controlla che i dati siano corretti e che il cliente abbia una prenotazione attiva.");
+                view.mostraMessaggioEsito(false, "", "Errore: Controlla che i dati siano corretti.");
             }
         });
 
