@@ -9,12 +9,12 @@ public class Pagamento {
     private LocalDate dataPagamento;
     private String metodoPagamento;
     private String codNoleggio;
-    private String codPrenotazione;
+    private Integer codPrenotazione;
 
     public Pagamento() {
     }
 
-    public Pagamento(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, String codNoleggio, String codPrenotazione) {
+    public Pagamento(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, String codNoleggio, Integer codPrenotazione) {
         this.codPagamento = codPagamento;
         this.importo = importo;
         this.dataPagamento = dataPagamento;
@@ -63,11 +63,11 @@ public class Pagamento {
         this.codNoleggio = codNoleggio;
     }
 
-    public String getCodPrenotazione() {
+    public Integer getCodPrenotazione() {
         return codPrenotazione;
     }
 
-    public void setCodPrenotazione(String codPrenotazione) {
+    public void setCodPrenotazione(Integer codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
     }
 

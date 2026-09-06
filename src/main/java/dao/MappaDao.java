@@ -1,11 +1,17 @@
 package dao;
 
-import model.PrenotazioneCampo;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import model.PrenotazioneCampo;
 
 public class MappaDAO {
 
@@ -13,10 +19,10 @@ public class MappaDAO {
         private final int numero;
         private final String codZona;
         private final String nomeZona;
-        private final String codPrenotazione;
+        private final Integer codPrenotazione;
         private final String clientePrenotato;
 
-        public MappaOmbrelloneInfo(int numero, String codZona, String nomeZona, String codPrenotazione, String clientePrenotato) {
+        public MappaOmbrelloneInfo(int numero, String codZona, String nomeZona, Integer codPrenotazione, String clientePrenotato) {
             this.numero = numero;
             this.codZona = codZona;
             this.nomeZona = nomeZona;
@@ -27,7 +33,7 @@ public class MappaDAO {
         public int getNumero() { return numero; }
         public String getCodZona() { return codZona; }
         public String getNomeZona() { return nomeZona; }
-        public String getCodPrenotazione() { return codPrenotazione; }
+        public Integer getCodPrenotazione() { return codPrenotazione; }
         public String getClientePrenotato() { return clientePrenotato; }
         public boolean isOccupato() { return codPrenotazione != null; }
     }
@@ -51,7 +57,7 @@ public class MappaDAO {
                         rs.getInt("Numero"),
                         rs.getString("CodZona"),
                         rs.getString("NomeZona"),
-                        rs.getString("CodPrenotazione"),
+                        rs.getInt("CodPrenotazione"),
                         rs.getString("ClientePrenotato")
                     ));
                 }
@@ -76,7 +82,7 @@ public class MappaDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     PrenotazioneCampo pc = new PrenotazioneCampo(
-                        rs.getString("CodPrenotazione"),
+                        rs.getInt("CodPrenotazioneCampo"), // <-- Corretto con il nome giusto della colonna
                         rs.getDate("DataPrenotazione").toLocalDate(),
                         rs.getTime("OraInizio").toLocalTime(),
                         rs.getTime("OraFine").toLocalTime(),

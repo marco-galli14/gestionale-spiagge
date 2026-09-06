@@ -1,13 +1,16 @@
 package controller;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import common.Pair;
+import common.StoricoPrenotazione;
 import dao.ClienteDAO;
 import dao.DipendenteDAO;
 import dao.MappaDAO;
 import dao.NoleggioAttrezzaturaDAO;
+import dao.OmbrelloneDAO;
 import dao.PagamentoDAO;
 import dao.PrenotazioneCampoDAO;
 import dao.PrenotazioneDAO;
@@ -28,6 +31,7 @@ public final class MainController {
     private final DipendenteDAO dipendenteDao;
     private final ZonaDAO zonaDao;
     private final PrenotazioneCampoDAO prenotazioneCampoDao;
+    private final OmbrelloneDAO ombrelloneDao;
 
     public MainController(MainView view) {
         this.view = view;
@@ -40,6 +44,7 @@ public final class MainController {
         this.dipendenteDao = new DipendenteDAO();
         this.zonaDao = new ZonaDAO();
         this.prenotazioneCampoDao = new PrenotazioneCampoDAO();
+        this.ombrelloneDao = new OmbrelloneDAO();
 
         inizializzaEventiUI();
         ricaricaDatiGlobali();
@@ -51,8 +56,8 @@ public final class MainController {
             gestisciInterazioneCellaSpiaggia(numeroCella);
         });
 
-        view.setOnCambioDataMappa(dataRiferimento -> {
-            aggiornaMappaSpiaggia(dataRiferimento);
+        view.setOnCambioDataOraMappa((dataRiferimento, oraRiferimento) -> {
+            aggiornaMappaSpiaggiaCompleta(dataRiferimento, oraRiferimento);
         });
 
         view.setOnSalvaClienteAction((cf, nome, cognome, email, telefono, codHotel) -> {
@@ -71,7 +76,15 @@ public final class MainController {
                 prenotazioneDao.updatePacchettoSconto(codPrenotazione);
                 prenotazioneDao.updateCostoTotale(codPrenotazione);
                 view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
+                view.mostraMessaggioEsito(true, "Prenotazione " + codPrenotazione + " creata con successo!", "");
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore nella creazione della prenotazione.");
             }
+        });
+
+        view.setOnRichiediStoricoPrenotazioni(() -> {
+            List<StoricoPrenotazione> storico = prenotazioneDao.getStoricoPrenotazioni();
+            view.mostraStoricoPrenotazioni(storico);
         });
 
         view.setOnCreaNoleggioAction((data, oraInizio, durata, cf, codDipendente, codAttrezzatura) -> {
@@ -101,9 +114,16 @@ public final class MainController {
             view.mostraCampiOccupati(campiOccupati);
         });
 
-        view.setOnCreaPrenotazioneCampoAction((codPren, oraInizio, oraFine, codCampo, cf, codDip) -> {
-            boolean ok = prenotazioneCampoDao.inserisciPrenotazioneCampo(codPren, oraInizio, oraFine, codCampo, cf, codDip);
+        view.setOnCreaPrenotazioneCampoAction((dataPrenotazione, oraInizio, oraFine, codCampo, cf, codDip) -> {
+            boolean ok = prenotazioneCampoDao.inserisciPrenotazioneCampo(dataPrenotazione, oraInizio, oraFine, codCampo, cf, codDip);
             view.mostraMessaggioEsito(ok, "Campo prenotato con successo!", "Errore nella prenotazione del campo.");
+            ricaricaDatiGlobali();
+        });
+
+        view.setOnEliminaPrenotazioneCampoAction(codPren -> {
+            boolean ok = prenotazioneCampoDao.eliminaPrenotazioneCampo(codPren);
+            view.mostraMessaggioEsito(ok, "Prenotazione campo eliminata con successo!", "Errore nell'eliminazione della prenotazione.");
+            ricaricaDatiGlobali();
         });
 
         view.setOnRegistraPagamentoPrenotazione((codPag, importo, data, metodo, codPren) -> {
@@ -131,9 +151,12 @@ public final class MainController {
         });
     }
 
-    private void aggiornaMappaSpiaggia(LocalDate dataRiferimento) {
+    private void aggiornaMappaSpiaggiaCompleta(LocalDate dataRiferimento, LocalTime oraRiferimento) {
         List<MappaDAO.MappaOmbrelloneInfo> infoCelle = mappaDao.getMappaSpiaggia(dataRiferimento);
         view.aggiornaGrigliaSpiaggia(infoCelle);
+
+        List<PrenotazioneCampo> campiOccupati = mappaDao.getOccupazioneCampi(dataRiferimento, oraRiferimento);
+        view.mostraCampiOccupati(campiOccupati);
     }
 
     private void gestisciInterazioneCellaSpiaggia(int numeroCella) {
@@ -159,7 +182,10 @@ public final class MainController {
 
     private void ricaricaDatiGlobali() {
         LocalDate oggi = LocalDate.now();
-        aggiornaMappaSpiaggia(oggi);
+        LocalTime oraCorrente = LocalTime.now().withMinute(0);
+        
+        aggiornaMappaSpiaggiaCompleta(oggi, oraCorrente);
+
         view.impostaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
         view.impostaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
         view.aggiornaListaPrenotazioniNonSaldate(prenotazioneDao.getPrenotazioniNonSaldate());

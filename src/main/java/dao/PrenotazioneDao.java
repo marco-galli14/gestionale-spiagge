@@ -14,22 +14,21 @@ import model.Prenotazione;
 
 public class PrenotazioneDAO {
 
-    public boolean addPrenotazione(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine,
+    public boolean addPrenotazione(LocalDate dataInizio, LocalDate dataFine,
                                     int codDipendente, String cf) {
-        String sql = "INSERT INTO prenotazione (CodPrenotazione, DataInizio, DataFine, PrezzoTotale," +
+        String sql = "INSERT INTO prenotazione (DataInizio, DataFine, PrezzoTotale," +
                                         "StatoPagamento, CodDipendente, CF, CodPacchetto, ID_gruppo) " +
-                        "VALUES (?, ?, ?, '00.00', 'Non pagato', ?, ?, NULL," + 
+                        "VALUES (?, ?, '00.00', 'Non pagato', ?, ?, NULL," + 
                                 "(SELECT c.ID_gruppo FROM cliente c WHERE c.CF = ?));";
 
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, codPrenotazione);
-            stmt.setDate(2, Date.valueOf(dataInizio));
-            stmt.setDate(3, Date.valueOf(dataFine));
-            stmt.setInt(4, codDipendente);
+            stmt.setDate(1, Date.valueOf(dataInizio));
+            stmt.setDate(2, Date.valueOf(dataFine));
+            stmt.setInt(3, codDipendente);
+            stmt.setString(4, cf);
             stmt.setString(5, cf);
-            stmt.setString(6, cf);
             
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -38,7 +37,7 @@ public class PrenotazioneDAO {
         }
     }
 
-    public boolean updatePacchettoSconto(String codPrenotazione) {
+    public boolean updatePacchettoSconto(int codPrenotazione) {
         String sql = "UPDATE prenotazione p " +
                         "SET p.CodPacchetto = (" +
                             "CASE " +
@@ -53,7 +52,7 @@ public class PrenotazioneDAO {
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, codPrenotazione);
+            stmt.setInt(1, codPrenotazione);
             
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -62,7 +61,7 @@ public class PrenotazioneDAO {
         }
     }
 
-    public boolean updateCostoTotale(String codPrenotazione) {
+    public boolean updateCostoTotale(int codPrenotazione) {
         String sql = "UPDATE prenotazione p \n" +
                     "LEFT JOIN pacchetto_sconto ps ON p.CodPacchetto = ps.CodPacchetto \n" +
                     "SET p.PrezzoTotale = ROUND(( \n" +
@@ -126,7 +125,7 @@ public class PrenotazioneDAO {
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, codPrenotazione);
+            stmt.setInt(1, codPrenotazione);
             
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -136,7 +135,7 @@ public class PrenotazioneDAO {
 
     }
     
-    public boolean updateStatoPagamento(String codPrenotazione) {
+    public boolean updateStatoPagamento(int codPrenotazione) {
         String sql = "UPDATE PRENOTAZIONE p \n" + 
                         "SET p.StatoPagamento = CASE \n" + 
                         "WHEN (\n" + 
@@ -152,7 +151,7 @@ public class PrenotazioneDAO {
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, codPrenotazione);
+            stmt.setInt(1, codPrenotazione);
             
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -161,13 +160,13 @@ public class PrenotazioneDAO {
         }
     }
 
-    public boolean deletePrenotazione(String codPrenotazione) {
+    public boolean deletePrenotazione(int codPrenotazione) {
         String sql = "DELETE FROM prenotazione WHERE CodPrenotazione = ?; ";
 
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, codPrenotazione);
+            stmt.setInt(1, codPrenotazione);
             
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -188,7 +187,7 @@ public class PrenotazioneDAO {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    String codP = rs.getString("CodPrenotazione");
+                    int codP = rs.getInt("CodPrenotazione");
                     LocalDate datI = rs.getDate("DataInizio").toLocalDate();
                     LocalDate datF = rs.getDate("DataFine").toLocalDate();
                     int prezzo = rs.getInt("PrezzoTotale");
@@ -225,7 +224,7 @@ public class PrenotazioneDAO {
                 String cf = rs.getString("CF");
                 String nome = rs.getString("Nome");
                 String cognome = rs.getString("Cognome");
-                String codPrenotazione = rs.getString("CodPrenotazione");
+                int codPrenotazione = rs.getInt("CodPrenotazione");
                 LocalDate dataInizio = rs.getDate("DataInizio").toLocalDate();
                 LocalDate dataFine = rs.getDate("DataFine").toLocalDate();
                 int prezzoTotale = rs.getInt("PrezzoTotale");

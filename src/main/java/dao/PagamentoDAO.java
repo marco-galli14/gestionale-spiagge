@@ -9,7 +9,7 @@ import common.Pair;
 
 public class PagamentoDAO {
 
-    public boolean insertPagamentoPrenotazione(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, String codPrenotazione) {
+    public boolean insertPagamentoPrenotazione(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, int codPrenotazione) {
         
         String query = "INSERT INTO PAGAMENTO (CodPagamento, DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
                         "VALUES (?, ?, ?, ?, ?, NULL)";
@@ -21,7 +21,7 @@ public class PagamentoDAO {
                     ps.setDate(2, java.sql.Date.valueOf(dataPagamento));
                     ps.setInt(3, importo);
                     ps.setString(4, metodoPagamento);
-                    ps.setString(5, codPrenotazione);
+                    ps.setInt(5, codPrenotazione);
     
                     int rowsAffected = ps.executeUpdate();
                     return rowsAffected > 0;

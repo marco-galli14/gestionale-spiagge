@@ -2,8 +2,11 @@ package view;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -16,20 +19,9 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import model.Dipendente;
@@ -41,16 +33,25 @@ public class MainView {
     private final Stage stage;
     private GridPane gridOmbrelloni;
     
+    // --- COMPONENTI PER LA SELEZIONE DATA/ORA IN ALTO A SINISTRA ---
+    private DatePicker datePickerPrincipale;
+    private TextField txtOraPrincipale;
+    
     // --- SCENE PER IL SINGLE PAGE APP ---
     private Scene scenaPrincipale;
     private Scene scenaMenuAttrezzature;
+    private Scene scenaMenuCampi;
+    private Scene scenaMenuOmbrelloni;
+    
+    // Mappa per tracciare i bottoni dei campi tramite il loro codice (C1, C2, ...)
+    private final Map<String, Button> bottoniCampiMap = new HashMap<>();
     
     // Variabile per salvare lo storico aggiornato
     private List<StoricoNoleggio> listaStoricoNoleggiAttuali = new ArrayList<>();
 
     // --- CALLBACK / HANDLER PER IL CONTROLLER ---
     private Consumer<Integer> onCellaOmbrelloneClicked;
-    private Consumer<LocalDate> onCambioDataMappa;
+    private BiConsumer<LocalDate, LocalTime> onCambioDataOraMappa;
     private OnSalvaClienteListener onSalvaClienteAction;
     private BiConsumer<String, Integer> onAssegnaGruppoCliente;
     private OnCreaPrenotazioneListener onCreaPrenotazioneAction;
@@ -58,10 +59,12 @@ public class MainView {
     private Consumer<String> onEliminaNoleggioAction;
     private BiConsumer<LocalDate, LocalTime> onVerificaCampiAction;
     private OnCreaPrenotazioneCampoListener onCreaPrenotazioneCampoAction;
+    private Consumer<Integer> onEliminaPrenotazioneCampoAction;
     private OnRegistraPagamentoListener onRegistraPagamentoPrenotazione;
     private Runnable onRichiediStatisticheDipendenti;
     private BiConsumer<LocalDate, LocalDate> onRichiediOccupazioneZone;
     private Consumer<LocalDate> onGeneraReportGiornaliero;
+    private Runnable onRichiediStoricoPrenotazioni;
 
     @FunctionalInterface
     public interface OnSalvaClienteListener {
@@ -77,7 +80,7 @@ public class MainView {
     }
     @FunctionalInterface
     public interface OnCreaPrenotazioneCampoListener {
-        void onCrea(String codPren, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, String codDip);
+        void onCrea(LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, String codDip);
     }
     @FunctionalInterface
     public interface OnRegistraPagamentoListener {
@@ -90,7 +93,7 @@ public class MainView {
 
     // --- SETTER ---
     public void setOnCellaOmbrelloneClicked(Consumer<Integer> listener) { this.onCellaOmbrelloneClicked = listener; }
-    public void setOnCambioDataMappa(Consumer<LocalDate> listener) { this.onCambioDataMappa = listener; }
+    public void setOnCambioDataOraMappa(BiConsumer<LocalDate, LocalTime> listener) { this.onCambioDataOraMappa = listener; }
     public void setOnSalvaClienteAction(OnSalvaClienteListener listener) { this.onSalvaClienteAction = listener; }
     public void setOnAssegnaGruppoCliente(BiConsumer<String, Integer> listener) { this.onAssegnaGruppoCliente = listener; }
     public void setOnCreaPrenotazioneAction(OnCreaPrenotazioneListener listener) { this.onCreaPrenotazioneAction = listener; }
@@ -98,15 +101,21 @@ public class MainView {
     public void setOnEliminaNoleggioAction(Consumer<String> listener) { this.onEliminaNoleggioAction = listener; }
     public void setOnVerificaCampiAction(BiConsumer<LocalDate, LocalTime> listener) { this.onVerificaCampiAction = listener; }
     public void setOnCreaPrenotazioneCampoAction(OnCreaPrenotazioneCampoListener listener) { this.onCreaPrenotazioneCampoAction = listener; }
+    public void setOnEliminaPrenotazioneCampoAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneCampoAction = listener; }
     public void setOnRegistraPagamentoPrenotazione(OnRegistraPagamentoListener listener) { this.onRegistraPagamentoPrenotazione = listener; }
     public void setOnRichiediStatisticheDipendenti(Runnable listener) { this.onRichiediStatisticheDipendenti = listener; }
     public void setOnRichiediOccupazioneZone(BiConsumer<LocalDate, LocalDate> listener) { this.onRichiediOccupazioneZone = listener; }
     public void setOnGeneraReportGiornaliero(Consumer<LocalDate> listener) { this.onGeneraReportGiornaliero = listener; }
+    public void setOnRichiediStoricoPrenotazioni(Runnable listener) { this.onRichiediStoricoPrenotazioni = listener; }
 
     public void mostraFinestra() {
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #f8f9fa;");
         root.setPadding(new Insets(15));
+
+        // --- BARRA SUPERIORE CON CALENDARIO E ORA PULITA ---
+        HBox topBar = creaBarraSelezioneDataOra();
+        root.setTop(topBar);
 
         Node mappaSpiaggia = creaMappaSpiaggia();
         ScrollPane scrollPane = new ScrollPane(mappaSpiaggia);
@@ -117,13 +126,55 @@ public class MainView {
 
         root.setRight(creaPannelloDestro());
 
-        this.scenaPrincipale = new Scene(root, 900, 600);
+        this.scenaPrincipale = new Scene(root, 950, 650);
         
         stage.setTitle("Mappa Stabilimento Balneare - Lido");
         stage.setScene(scenaPrincipale);
-        stage.setMinWidth(800);
-        stage.setMinHeight(500);
+        stage.setMinWidth(850);
+        stage.setMinHeight(550);
         stage.show();
+    }
+
+    private HBox creaBarraSelezioneDataOra() {
+        HBox bar = new HBox(10);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setPadding(new Insets(0, 0, 15, 0));
+
+        Label lblData = new Label("Data:");
+        lblData.setStyle("-fx-font-weight: bold;");
+        
+        datePickerPrincipale = new DatePicker(LocalDate.now());
+        datePickerPrincipale.setPrefWidth(140);
+
+        Label lblOra = new Label("Ora (HH:mm):");
+        lblOra.setStyle("-fx-font-weight: bold;");
+
+        String oraCorrenteFormattata = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+        txtOraPrincipale = new TextField(oraCorrenteFormattata);
+        txtOraPrincipale.setPrefWidth(80);
+
+        Button btnAggiorna = new Button("Aggiorna Mappa");
+        btnAggiorna.setStyle("-fx-background-color: #34495e; -fx-text-fill: white; -fx-font-weight: bold;");
+        btnAggiorna.setOnAction(e -> triggerAggiornamentoDataOra());
+
+        datePickerPrincipale.setOnAction(e -> triggerAggiornamentoDataOra());
+
+        bar.getChildren().addAll(lblData, datePickerPrincipale, lblOra, txtOraPrincipale, btnAggiorna);
+        return bar;
+    }
+
+    private void triggerAggiornamentoDataOra() {
+        if (onCambioDataOraMappa != null) {
+            try {
+                LocalDate data = datePickerPrincipale.getValue();
+                LocalTime ora = LocalTime.parse(txtOraPrincipale.getText(), DateTimeFormatter.ofPattern("HH:mm"));
+                if (data != null) {
+                    onCambioDataOraMappa.accept(data, ora);
+                }
+            } catch (Exception ex) {
+                mostraMessaggioEsito(false, "", "Formato ora non valido (usa il formato HH:mm es. 10:00).");
+            }
+        }
     }
 
     private Node creaMappaSpiaggia() {
@@ -169,9 +220,69 @@ public class MainView {
             "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;");
     }
 
+    public void aggiornaStatoCampi(List<String> codiciCampiOccupati) {
+        for (Map.Entry<String, Button> entry : bottoniCampiMap.entrySet()) {
+            String codCampo = entry.getKey();
+            Button btn = entry.getValue();
+            boolean occupato = codiciCampiOccupati.contains(codCampo);
+            impostaStatoCell(btn, occupato);
+        }
+    }
+
     // =====================================================================
     // --- GESTIONE VISTE E SCENE ---
     // =====================================================================
+
+    public void cambiaScenaOmbrelloni() {
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(30));
+        layout.setAlignment(Pos.CENTER);
+        layout.setStyle("-fx-background-color: #f8f9fa;");
+
+        Label titolo = new Label("GESTIONE OMBRELLONI E PRENOTAZIONI");
+        titolo.setFont(new Font("System Bold", 22));
+
+        Button btnInserisciPren = creaPulsanteSezione("Inserisci Prenotazione", 40);
+        Button btnEliminaPren = creaPulsanteSezione("Elimina Prenotazione", 40);
+        Button btnStoricoPren = creaPulsanteSezione("Storico Prenotazioni", 40);
+        Button btnAddGiornaliera = creaPulsanteSezione("Aggiungi Prenotazione Giornaliera", 40);
+        Button btnAggiornaOmb = creaPulsanteSezione("Aggiorna Ombrellone", 40);
+        Button btnDelGiornaliera = creaPulsanteSezione("Elimina Prenotazione Giornaliera", 40);
+        Button btnAddAllestimento = creaPulsanteSezione("Aggiungi Allestimento", 40);
+        Button btnAggiornaAllestimento = creaPulsanteSezione("Aggiorna Allestimento", 40);
+        Button btnDelAllestimento = creaPulsanteSezione("Elimina Allestimento", 40);
+
+        Button btnIndietro = new Button("⬅ Torna alla Mappa");
+        btnIndietro.setPrefSize(180, 38);
+        btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        // Azioni collegate ai form/viste dedicati
+        btnInserisciPren.setOnAction(e -> mostraFormInserisciPrenotazione());
+        btnEliminaPren.setOnAction(e -> mostraFormEliminaPrenotazione());
+        btnStoricoPren.setOnAction(e -> {
+            if (onRichiediStoricoPrenotazioni != null) onRichiediStoricoPrenotazioni.run();
+        });
+        btnAddGiornaliera.setOnAction(e -> mostraFormAggiungiGiornaliera());
+        btnAggiornaOmb.setOnAction(e -> mostraFormAggiornaOmbrellone());
+        btnDelGiornaliera.setOnAction(e -> mostraFormEliminaGiornaliera());
+        btnAddAllestimento.setOnAction(e -> mostraFormAggiungiAllestimento());
+        btnAggiornaAllestimento.setOnAction(e -> mostraFormAggiornaAllestimento());
+        btnDelAllestimento.setOnAction(e -> mostraFormEliminaAllestimento());
+        
+        btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
+
+        VBox contentBox = new VBox(12, titolo, btnInserisciPren, btnEliminaPren, btnStoricoPren, 
+            btnAddGiornaliera, btnAggiornaOmb, btnDelGiornaliera, btnAddAllestimento, 
+            btnAggiornaAllestimento, btnDelAllestimento, btnIndietro);
+        contentBox.setAlignment(Pos.CENTER);
+
+        ScrollPane scroll = new ScrollPane(contentBox);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        this.scenaMenuOmbrelloni = new Scene(scroll, stage.getScene().getWidth(), stage.getScene().getHeight());
+        stage.setScene(scenaMenuOmbrelloni);
+    }
 
     private void cambiaScenaAttrezzature() {
         VBox layout = new VBox(20);
@@ -199,6 +310,146 @@ public class MainView {
         
         this.scenaMenuAttrezzature = new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight());
         stage.setScene(scenaMenuAttrezzature);
+    }
+
+    private void cambiaScenaCampi() {
+        VBox layout = new VBox(20);
+        layout.setPadding(new Insets(40));
+        layout.setAlignment(Pos.CENTER);
+        layout.setStyle("-fx-background-color: #f8f9fa;");
+
+        Label titolo = new Label("GESTIONE CAMPI SPORTIVI");
+        titolo.setFont(new Font("System Bold", 28));
+
+        Button btnInserisci = creaPulsanteSezione("Inserisci Prenotazione Campo", 50);
+        Button btnElimina = creaPulsanteSezione("Elimina Prenotazione Campo", 50);
+        
+        Button btnIndietro = new Button("⬅ Torna alla Mappa");
+        btnIndietro.setPrefSize(160, 40);
+        btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        btnInserisci.setOnAction(e -> mostraFormAggiungiPrenotazioneCampo());
+        btnElimina.setOnAction(e -> mostraFormEliminaPrenotazioneCampo());
+        btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
+
+        layout.getChildren().addAll(titolo, btnInserisci, btnElimina, btnIndietro);
+        
+        this.scenaMenuCampi = new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight());
+        stage.setScene(scenaMenuCampi);
+    }
+
+    // --- FORM DEDICATI PER OMBRELLONI ---
+    private void mostraFormInserisciPrenotazione() {
+        GridPane grid = new GridPane();
+        grid.setVgap(10); grid.setHgap(10);
+        grid.setAlignment(Pos.CENTER);
+
+        DatePicker dpInizio = new DatePicker(LocalDate.now());
+        DatePicker dpFine = new DatePicker(LocalDate.now().plusDays(7));
+        TextField txtCodPren = new TextField();
+        TextField txtCf = new TextField();
+        TextField txtDip = new TextField();
+
+        grid.add(new Label("Codice Prenotazione:"), 0, 0); grid.add(txtCodPren, 1, 0);
+        grid.add(new Label("Data Inizio:"), 0, 1);         grid.add(dpInizio, 1, 1);
+        grid.add(new Label("Data Fine:"), 0, 2);           grid.add(dpFine, 1, 2);
+        grid.add(new Label("CF Cliente:"), 0, 3);          grid.add(txtCf, 1, 3);
+        grid.add(new Label("Cod. Dipendente:"), 0, 4);     grid.add(txtDip, 1, 4);
+
+        Button btnSalva = new Button("Procedi a Seleziona Ombrelloni");
+        btnSalva.setOnAction(e -> {
+            if (onCreaPrenotazioneAction != null) {
+                try {
+                    onCreaPrenotazioneAction.onCrea(
+                        txtCodPren.getText(),
+                        dpInizio.getValue(),
+                        dpFine.getValue(),
+                        Integer.parseInt(txtDip.getText()),
+                        txtCf.getText()
+                    );
+                } catch (Exception ex) {
+                    mostraMessaggioEsito(false, "", "Controlla i dati inseriti (es. dipendente numerico).");
+                }
+            }
+        });
+
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+
+        VBox layout = new VBox(20, new Label("INSERISCI NUOVA PRENOTAZIONE"), grid, new HBox(10, btnSalva, btnIndietro));
+        layout.setAlignment(Pos.CENTER);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormEliminaPrenotazione() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        TextField txtCod = new TextField();
+        txtCod.setMaxWidth(200);
+
+        Button btnElimina = new Button("Elimina Prenotazione");
+        btnElimina.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+        btnElimina.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+
+        Button btnIndietro = new Button("Annulla");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+
+        layout.getChildren().addAll(new Label("Codice Prenotazione da eliminare:"), txtCod, btnElimina, btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormAggiungiGiornaliera() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Aggiungi Prenotazione Giornaliera"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormAggiornaOmbrellone() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Aggiorna Ombrellone"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormEliminaGiornaliera() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Elimina Prenotazione Giornaliera"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormAggiungiAllestimento() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Aggiungi Allestimento"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormAggiornaAllestimento() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Aggiorna Allestimento"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormEliminaAllestimento() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+        layout.getChildren().addAll(new Label("Form Elimina Allestimento"), btnIndietro);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
     // --- 1. VISTA AGGIUNGI NOLEGGIO ---
@@ -250,26 +501,137 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    // --- 2. VISTA STORICO NOLEGGI (AGGIORNATA CON LA LISTA FRESCA) ---
+    private void mostraFormAggiungiPrenotazioneCampo() {
+        GridPane grid = new GridPane();
+        grid.setVgap(10); grid.setHgap(10);
+        grid.setAlignment(Pos.CENTER);
+
+        DatePicker datePicker = new DatePicker(LocalDate.now());
+
+        ComboBox<String> cmbCampo = new ComboBox<>();
+        cmbCampo.getItems().addAll("Beach Volley", "Beach Tennis", "Calcetto", "Bocce Sabbia", "Bocce Cemento");
+        cmbCampo.setValue("Beach Volley");
+
+        TextField txtOraInizio = new TextField("10:00");
+        TextField txtOraFine = new TextField("11:00");
+        TextField txtCf = new TextField();
+        TextField txtCodDip = new TextField();
+
+        grid.add(new Label("Data Prenotazione:"), 0, 0);   grid.add(datePicker, 1, 0);
+        grid.add(new Label("Seleziona Campo:"), 0, 1);       grid.add(cmbCampo, 1, 1);
+        grid.add(new Label("Ora Inizio (HH:mm):"), 0, 2); grid.add(txtOraInizio, 1, 2);
+        grid.add(new Label("Ora Fine (HH:mm):"), 0, 3);   grid.add(txtOraFine, 1, 3);
+        grid.add(new Label("CF Cliente:"), 0, 4);          grid.add(txtCf, 1, 4);
+        grid.add(new Label("Cod. Dipendente:"), 0, 5);     grid.add(txtCodDip, 1, 5);
+
+        Button btnSalva = new Button("Salva Prenotazione Campo");
+        btnSalva.setOnAction(e -> {
+            try {
+                String nomeSelezionato = cmbCampo.getValue();
+                String codCampoDb = switch (nomeSelezionato) {
+                    case "Beach Volley" -> "C1";
+                    case "Beach Tennis" -> "C2";
+                    case "Calcetto" -> "C3";
+                    case "Bocce Sabbia" -> "C4";
+                    case "Bocce Cemento" -> "C5";
+                    default -> "C1";
+                };
+
+                if (onCreaPrenotazioneCampoAction != null) {
+                    onCreaPrenotazioneCampoAction.onCrea(
+                        datePicker.getValue(),
+                        LocalTime.parse(txtOraInizio.getText()),
+                        LocalTime.parse(txtOraFine.getText()),
+                        codCampoDb,
+                        txtCf.getText(),
+                        txtCodDip.getText()
+                    );
+                }
+            } catch (Exception ex) {
+                mostraMessaggioEsito(false, "", "Formato dati non valido.");
+            }
+        });
+
+        Button btnAnnulla = new Button("Indietro");
+        btnAnnulla.setOnAction(e -> stage.setScene(scenaMenuCampi));
+
+        HBox buttons = new HBox(10, btnSalva, btnAnnulla);
+        buttons.setAlignment(Pos.CENTER);
+
+        VBox layout = new VBox(20, new Label("INSERISCI PRENOTAZIONE CAMPO"), grid, buttons);
+        layout.setAlignment(Pos.CENTER);
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    private void mostraFormEliminaPrenotazioneCampo() {
+        VBox layout = new VBox(15);
+        layout.setAlignment(Pos.CENTER);
+
+        TextField txtCod = new TextField();
+        txtCod.setMaxWidth(200);
+        
+        Button btnElimina = new Button("Elimina Definitivamente");
+        btnElimina.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+        btnElimina.setOnAction(e -> {
+            try {
+                if (onEliminaPrenotazioneCampoAction != null) {
+                    onEliminaPrenotazioneCampoAction.accept(Integer.parseInt(txtCod.getText()));
+                    stage.setScene(scenaMenuCampi);
+                }
+            } catch (NumberFormatException ex) {
+                mostraMessaggioEsito(false, "", "Il codice prenotazione deve essere un numero intero.");
+            }
+        });
+
+        Button btnIndietro = new Button("Annulla");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuCampi));
+
+        layout.getChildren().addAll(
+            new Label("Inserisci il Codice Numerico della Prenotazione Campo da eliminare:"),
+            txtCod, btnElimina, btnIndietro
+        );
+
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    // --- 2. VISTA STORICO NOLEGGI ---
     private void mostraStoricoNoleggi() {
         TableView<StoricoNoleggio> table = new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
         TableColumn<StoricoNoleggio, String> colCf = new TableColumn<>("CF");
-        colCf.setCellValueFactory(new PropertyValueFactory<>("cf"));
+        colCf.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().cf()));
         
-        TableColumn<StoricoNoleggio, String> colCod = new TableColumn<>("Cod Noleggio");
-        colCod.setCellValueFactory(new PropertyValueFactory<>("codNoleggio"));
+        TableColumn<StoricoNoleggio, String> colNome = new TableColumn<>("Nome");
+        colNome.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().nome()));
+
+        TableColumn<StoricoNoleggio, String> colCognome = new TableColumn<>("Cognome");
+        colCognome.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().cognome()));
+
+        TableColumn<StoricoNoleggio, String> colCodAttrezzatura = new TableColumn<>("Codice Attrezzatura");
+        colCodAttrezzatura.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().codAttrezzatura()));
+
+        TableColumn<StoricoNoleggio, Integer> colCod = new TableColumn<>("Cod Noleggio");
+        colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().codNoleggio()));
         
         TableColumn<StoricoNoleggio, LocalDate> colData = new TableColumn<>("Data");
-        colData.setCellValueFactory(new PropertyValueFactory<>("dataNoleggio"));
+        colData.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().dataNoleggio()));
+
+        TableColumn<StoricoNoleggio, LocalTime> colOra = new TableColumn<>("Ora Inizio");
+        colOra.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().oraInizio()));
+
+        TableColumn<StoricoNoleggio, Integer> colDurata = new TableColumn<>("Durata (h)");
+        colDurata.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().durataOre()));
 
         TableColumn<StoricoNoleggio, Integer> colCosto = new TableColumn<>("Costo Tot (€)");
-        colCosto.setCellValueFactory(new PropertyValueFactory<>("costoTotale"));
+        colCosto.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().costoTotale()));
 
-        table.getColumns().addAll(colCf, colCod, colData, colCosto);
+        table.getColumns().addAll(colCf, colNome, colCognome, colCod, colData, colCodAttrezzatura, colOra, colDurata, colCosto);
         
-        // Riempiamo la tabella con la lista aggiornata
-        table.getItems().addAll(listaStoricoNoleggiAttuali);
+        List<StoricoNoleggio> listaPulita = listaStoricoNoleggiAttuali.stream()
+            .filter(n -> n != null)
+            .toList();
+        table.setItems(javafx.collections.FXCollections.observableArrayList(listaPulita));
 
         Button btnIndietro = new Button("Indietro");
         btnIndietro.setOnAction(e -> stage.setScene(scenaMenuAttrezzature));
@@ -278,6 +640,41 @@ public class MainView {
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(20));
         
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    public void mostraStoricoPrenotazioni(List<StoricoPrenotazione> storico) {
+        TableView<StoricoPrenotazione> table = new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<StoricoPrenotazione, String> colCod = new TableColumn<>("Cod Prenotazione");
+        colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().codPrenotazione()));
+
+        TableColumn<StoricoPrenotazione, LocalDate> colInizio = new TableColumn<>("Data Inizio");
+        colInizio.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().dataInizio()));
+
+        TableColumn<StoricoPrenotazione, LocalDate> colFine = new TableColumn<>("Data Fine");
+        colFine.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().dataFine()));
+
+        TableColumn<StoricoPrenotazione, String> colCf = new TableColumn<>("CF Cliente");
+        colCf.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().cf()));
+
+        TableColumn<StoricoPrenotazione, String> colNome = new TableColumn<>("Nome");
+        colNome.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().nome()));
+
+        TableColumn<StoricoPrenotazione, String> colCognome = new TableColumn<>("Cognome");
+        colCognome.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().cognome()));
+
+        table.getColumns().addAll(colCod, colInizio, colFine, colCf, colNome, colCognome);
+        table.setItems(javafx.collections.FXCollections.observableArrayList(storico));
+
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+
+        VBox layout = new VBox(15, new Label("STORICO PRENOTAZIONI SPIAGGIA"), table, btnIndietro);
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(20));
+
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
@@ -329,9 +726,21 @@ public class MainView {
         impostaTabellaNoleggi(storico);
     }
 
-    public void mostraDettagliPrenotazioneCella(String codZona, String nomeZona, String codPrenotazione, String clientePrenotato) { }
-    public void apriFormNuovaPrenotazionePerCella(int numeroCella) { }
-    public void mostraCampiOccupati(List<PrenotazioneCampo> campiOccupati) { }
+    public void mostraDettagliPrenotazioneCella(String codZona, String nomeZona, String codPrenotazione, String clientePrenotato) { 
+        cambiaScenaOmbrelloni();
+    }
+    
+    public void apriFormNuovaPrenotazionePerCella(int numeroCella) { 
+        cambiaScenaOmbrelloni();
+    }
+    
+    public void mostraCampiOccupati(List<PrenotazioneCampo> campiOccupati) {
+        List<String> codici = campiOccupati.stream()
+                .map(PrenotazioneCampo::getCodCampo)
+                .toList();
+        aggiornaStatoCampi(codici);
+    }
+
     public void mostraReportIncassi(int incassiPrenotazioni, int incassiNoleggi) { }
     public void mostraStatisticheDipendenti(Pair<Dipendente, Integer> topPrenotazioni, Pair<Dipendente, Integer> topNoleggi) { }
     public void mostraStatisticheZone(List<ZonaDAO.ZonaOccupazioneInfo> percentuali) { }
@@ -345,6 +754,9 @@ public class MainView {
         pannello.setAlignment(Pos.TOP_CENTER);
         pannello.setPrefWidth(190);
 
+        Button btnOmbrelloniMenu = creaPulsanteSezione("OMBRELLONI", 75);
+        btnOmbrelloniMenu.setOnAction(e -> cambiaScenaOmbrelloni());
+
         Button btnAttrezzature = creaPulsanteSezione("ATTREZZATURE", 75);
         btnAttrezzature.setOnAction(e -> cambiaScenaAttrezzature());
 
@@ -354,19 +766,35 @@ public class MainView {
         Label lblCampiTitle = new Label("CAMPI SPORTIVI");
         lblCampiTitle.setFont(new Font("System Bold", 12));
 
-        Button btnCalcetto = creaPulsanteCampo("CAMPO CALCETTO");
-        Button btnBeachVolley = creaPulsanteCampo("CAMPO BEACH VOLLEY");
-        Button btnBeachTennis = creaPulsanteCampo("CAMPO BEACH TENNIS");
-        Button btnBocceSabbia = creaPulsanteCampo("CAMPO BOCCE SABBIA");
-        Button btnBocceAsfalto = creaPulsanteCampo("CAMPO BOCCE ASFALTO");
+        Button btnBeachVolley = creaPulsanteCampo("BEACH VOLLEY");
+        Button btnBeachTennis = creaPulsanteCampo("BEACH TENNIS");
+        Button btnCalcetto = creaPulsanteCampo("CALCETTO");
+        Button btnBocceSabbia = creaPulsanteCampo("BOCCE SABBIA");
+        Button btnBocceCemento = creaPulsanteCampo("BOCCE CEMENTO");
         Button btnStoricoReport = creaPulsanteCampo("STORICO E REPORT");
+
+        bottoniCampiMap.put("C1", btnBeachVolley);
+        bottoniCampiMap.put("C2", btnBeachTennis);
+        bottoniCampiMap.put("C3", btnCalcetto);
+        bottoniCampiMap.put("C4", btnBocceSabbia);
+        bottoniCampiMap.put("C5", btnBocceCemento);
+
+        for (Button btn : bottoniCampiMap.values()) {
+            impostaStatoCell(btn, false);
+        }
+
+        btnBeachVolley.setOnAction(e -> cambiaScenaCampi());
+        btnBeachTennis.setOnAction(e -> cambiaScenaCampi());
+        btnCalcetto.setOnAction(e -> cambiaScenaCampi());
+        btnBocceSabbia.setOnAction(e -> cambiaScenaCampi());
+        btnBocceCemento.setOnAction(e -> cambiaScenaCampi());
 
         btnStoricoReport.setOnAction(e -> {
             if (onGeneraReportGiornaliero != null) onGeneraReportGiornaliero.accept(LocalDate.now());
         });
 
-        boxCampi.getChildren().addAll(lblCampiTitle, btnCalcetto, btnBeachVolley, btnBeachTennis, btnBocceSabbia, btnBocceAsfalto, btnStoricoReport);
-        pannello.getChildren().addAll(btnAttrezzature, boxCampi);
+        boxCampi.getChildren().addAll(lblCampiTitle, btnBeachVolley, btnBeachTennis, btnCalcetto, btnBocceSabbia, btnBocceCemento, btnStoricoReport);
+        pannello.getChildren().addAll(btnOmbrelloniMenu, btnAttrezzature, boxCampi);
         return pannello;
     }
 

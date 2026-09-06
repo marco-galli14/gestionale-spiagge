@@ -91,7 +91,7 @@ public class NoleggioAttrezzaturaDAO {
 
         List<StoricoNoleggio> storicoNoleggi = new ArrayList<>();
 
-        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.OraInizio, n.DurataOre, n.CostoTotale " +
+        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.codAttrezzatura,n.OraInizio, n.DurataOre, n.CostoTotale " +
                         "FROM cliente c, noleggio_attrezzatura n " +
                         "WHERE c.CF = n.CF";
 
@@ -105,11 +105,12 @@ public class NoleggioAttrezzaturaDAO {
                 String cognome = rs.getString("Cognome");
                 int codNoleggio = rs.getInt("CodNoleggio");
                 LocalDate dataNoleggio = rs.getDate("DataNoleggio").toLocalDate();
+                String codAttrezzatura = rs.getString("codAttrezzatura");
                 LocalTime oraInizio = rs.getTime("OraInizio").toLocalTime();
                 int durataOre = rs.getInt("DurataOre");
                 int costoTotale = rs.getInt("CostoTotale");
 
-                storicoNoleggi.add(new StoricoNoleggio(cf, nome, cognome, codNoleggio, dataNoleggio, oraInizio, durataOre, costoTotale));
+                storicoNoleggi.add(new StoricoNoleggio(cf, nome, cognome, codNoleggio, dataNoleggio, codAttrezzatura, oraInizio, durataOre, costoTotale));
             }
 
         } catch (SQLException e) {

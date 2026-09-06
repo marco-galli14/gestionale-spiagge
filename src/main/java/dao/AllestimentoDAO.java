@@ -13,7 +13,7 @@ import model.Allestimento;
 
 public class AllestimentoDAO {
 
-    public boolean addAllestimento(String codSeduta, String codPrenotazione, int numero,
+    public boolean addAllestimento(String codSeduta, int codPrenotazione, int numero,
                                     LocalDate dataRiferimento, int quantita) {
         String sql = "INSERT INTO allestimento (CodSeduta, CodPrenotazione, Numero, DataRiferimento, Quantita) " +
                         "VALUES (?, ?, ?, ?, ?);";
@@ -23,7 +23,7 @@ public class AllestimentoDAO {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, codSeduta);
-            stmt.setString(2, codPrenotazione);
+            stmt.setInt(2, codPrenotazione);
             stmt.setInt(3, numero);
             stmt.setDate(4, Date.valueOf(dataRiferimento));
             stmt.setInt(5, quantita);
@@ -35,7 +35,7 @@ public class AllestimentoDAO {
         }
     }
 
-    public boolean updateAllestimento(int quantita, String codSeduta, String codPrenotazione, int numero,
+    public boolean updateAllestimento(int quantita, String codSeduta, int codPrenotazione, int numero,
                                     LocalDate dataRiferimento) {
         String sql = "UPDATE allestimento " +
                         "SET Quantita = ? " +
@@ -50,7 +50,7 @@ public class AllestimentoDAO {
             
             stmt.setInt(1, quantita);
             stmt.setString(2, codSeduta);
-            stmt.setString(3, codPrenotazione);
+            stmt.setInt(3, codPrenotazione);
             stmt.setInt(4, numero);
             stmt.setDate(5, Date.valueOf(dataRiferimento));
             
@@ -61,7 +61,7 @@ public class AllestimentoDAO {
         }
     }
 
-    public boolean deleteAllestimento(String codSeduta, String codPrenotazione, int numero, LocalDate dataRiferimento) {
+    public boolean deleteAllestimento(String codSeduta, int codPrenotazione, int numero, LocalDate dataRiferimento) {
         String sql = "DELETE FROM allestimento \n" +
                         "WHERE CodSeduta = ? \n" +
                         "AND CodPrenotazione = ? \n" +
@@ -72,7 +72,7 @@ public class AllestimentoDAO {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, codSeduta);
-            stmt.setString(2, codPrenotazione);
+            stmt.setInt(2, codPrenotazione);
             stmt.setInt(3, numero);
             stmt.setDate(4, Date.valueOf(dataRiferimento));
             
@@ -91,7 +91,7 @@ public class AllestimentoDAO {
      * @param dataRiferimento
      * @return
      */
-    public List<Allestimento> getAllestimenti(String codPrenotazione, int numero, LocalDate dataRiferimento) {
+    public List<Allestimento> getAllestimenti(int codPrenotazione, int numero, LocalDate dataRiferimento) {
         List<Allestimento> allestimenti = new ArrayList<>();
 
         String sql = "SELECT * " +
@@ -103,14 +103,14 @@ public class AllestimentoDAO {
         try (Connection conn = DatabaseConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, codPrenotazione);
+            pstmt.setInt(1, codPrenotazione);
             pstmt.setInt(2, numero);
             pstmt.setDate(3, Date.valueOf(dataRiferimento));
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     String codSeduta = rs.getString("CodSeduta");
-                    String codP = rs.getString("CodPrenotazione");
+                    int codP = rs.getInt("CodPrenotazione");
                     int n = rs.getInt("Numero");
                     LocalDate dRif = rs.getDate("DataRiferimento").toLocalDate();
                     int q = rs.getInt("Quantita");

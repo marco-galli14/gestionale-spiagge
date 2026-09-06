@@ -13,12 +13,12 @@ public class NoleggioAttrezzatura {
     private int codDipendente;
     private String cf;
     private String codAttrezzatura;
-    private String codPrenotazione;
+    private Integer codPrenotazione;
 
     public NoleggioAttrezzatura() {
     }
 
-    public NoleggioAttrezzatura(int codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, int durataOre, int costoTotale, int codDipendente, String cf, String codAttrezzatura, String codPrenotazione) {
+    public NoleggioAttrezzatura(int codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, int durataOre, int costoTotale, int codDipendente, String cf, String codAttrezzatura, Integer codPrenotazione) {
         this.codNoleggio = codNoleggio;
         this.dataNoleggio = dataNoleggio;
         this.oraInizio = oraInizio;
@@ -94,11 +94,11 @@ public class NoleggioAttrezzatura {
         this.codAttrezzatura = codAttrezzatura;
     }
 
-    public String getCodPrenotazione() {
+    public Integer getCodPrenotazione() {
         return codPrenotazione;
     }
 
-    public void setCodPrenotazione(String codPrenotazione) {
+    public void setCodPrenotazione(Integer codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
     }
 

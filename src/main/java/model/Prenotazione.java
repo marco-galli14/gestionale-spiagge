@@ -4,7 +4,7 @@ import java.time.LocalDate;
 
 public class Prenotazione {
 
-    private String codPrenotazione;
+    private int codPrenotazione;
     private LocalDate dataInizio;
     private LocalDate dataFine;
     private int PrezzoTotale;
@@ -17,7 +17,7 @@ public class Prenotazione {
     public Prenotazione() {
     }
 
-    public Prenotazione(String codPrenotazione, LocalDate dataInizio, LocalDate dataFine,int prezzoTotale,
+    public Prenotazione(int codPrenotazione, LocalDate dataInizio, LocalDate dataFine,int prezzoTotale,
             boolean statoPagmento, int codDipendente, String cf, String codPacchetto, Integer idGruppo) {
         this.codPrenotazione = codPrenotazione;
         this.dataInizio = dataInizio;
@@ -30,11 +30,11 @@ public class Prenotazione {
         this.idGruppo = idGruppo;
     }
 
-    public String getCodPrenotazione() {
+    public int getCodPrenotazione() {
         return codPrenotazione;
     }
 
-    public void setCodPrenotazione(String codPrenotazione) {
+    public void setCodPrenotazione(int codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
     }
 
@@ -100,38 +100,6 @@ public class Prenotazione {
 
     public void setIdGruppo(Integer idGruppo) {
         this.idGruppo = idGruppo;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((codPrenotazione == null) ? 0 : codPrenotazione.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        Prenotazione other = (Prenotazione) obj;
-        if (codPrenotazione == null) {
-            if (other.codPrenotazione != null)
-                return false;
-        } else if (!codPrenotazione.equals(other.codPrenotazione))
-            return false;
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "Prenotazione [codPrenotazione=" + codPrenotazione + ", dataInizio=" + dataInizio + ", dataFine="
-                + dataFine + ", PrezzoTotale=" + PrezzoTotale + ", statoPagmento=" + statoPagmento + ", codDipendente="
-                + codDipendente + ", cf=" + cf + ", codPacchetto=" + codPacchetto + ", idGruppo=" + idGruppo + "]";
     }
 
 }

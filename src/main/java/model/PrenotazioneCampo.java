@@ -5,7 +5,7 @@ import java.time.LocalTime;
 
 public class PrenotazioneCampo {
 
-    private String codPrenotazioneCampo;
+    private int codPrenotazioneCampo;
     private LocalDate dataPrenotazione;
     private LocalTime oraInizio;
     private LocalTime oraFine;
@@ -16,7 +16,7 @@ public class PrenotazioneCampo {
     public PrenotazioneCampo() {
     }
 
-    public PrenotazioneCampo(String codPrenotazioneCampo, LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String cf, String codCampo, int codDipendente) {
+    public PrenotazioneCampo(int codPrenotazioneCampo, LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String cf, String codCampo, int codDipendente) {
         this.codPrenotazioneCampo = codPrenotazioneCampo;
         this.dataPrenotazione = dataPrenotazione;
         this.oraInizio = oraInizio;
@@ -26,11 +26,11 @@ public class PrenotazioneCampo {
         CodDipendente = codDipendente;
     }
 
-    public String getCodPrenotazioneCampo() {
+    public int getCodPrenotazioneCampo() {
         return codPrenotazioneCampo;
     }
 
-    public void setCodPrenotazioneCampo(String codPrenotazioneCampo) {
+    public void setCodPrenotazioneCampo(int codPrenotazioneCampo) {
         this.codPrenotazioneCampo = codPrenotazioneCampo;
     }
 
@@ -82,36 +82,4 @@ public class PrenotazioneCampo {
         CodDipendente = codDipendente;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((codPrenotazioneCampo == null) ? 0 : codPrenotazioneCampo.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        PrenotazioneCampo other = (PrenotazioneCampo) obj;
-        if (codPrenotazioneCampo == null) {
-            if (other.codPrenotazioneCampo != null)
-                return false;
-        } else if (!codPrenotazioneCampo.equals(other.codPrenotazioneCampo))
-            return false;
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "PrenotazioneCampo [codPrenotazioneCampo=" + codPrenotazioneCampo + ", dataPrenotazione="
-                + dataPrenotazione + ", oraInizio=" + oraInizio + ", oraFine=" + oraFine + ", cf=" + cf + ", codCampo="
-                + codCampo + ", CodDipendente=" + CodDipendente + "]";
-    }
-    
 }
