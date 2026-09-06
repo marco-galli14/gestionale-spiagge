@@ -68,5 +68,33 @@ public class Dipendente {
     public void setRuolo(String ruolo) {
         this.ruolo = ruolo;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + codDipendente;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Dipendente other = (Dipendente) obj;
+        if (codDipendente != other.codDipendente)
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Dipendente [codDipendente=" + codDipendente + ", nome=" + nome + ", cognome=" + cognome + ", username="
+                + username + ", pwd=" + pwd + ", ruolo=" + ruolo + "]";
+    }
     
 }

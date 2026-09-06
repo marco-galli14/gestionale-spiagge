@@ -102,4 +102,37 @@ public class NoleggioAttrezzatura {
         this.codPrenotazione = codPrenotazione;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codNoleggio == null) ? 0 : codNoleggio.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        NoleggioAttrezzatura other = (NoleggioAttrezzatura) obj;
+        if (codNoleggio == null) {
+            if (other.codNoleggio != null)
+                return false;
+        } else if (!codNoleggio.equals(other.codNoleggio))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "NoleggioAttrezzatura [codNoleggio=" + codNoleggio + ", dataNoleggio=" + dataNoleggio + ", oraInizio="
+                + oraInizio + ", durataOre=" + durataOre + ", costoTotale=" + costoTotale + ", codDipendente="
+                + codDipendente + ", cf=" + cf + ", codAttrezzatura=" + codAttrezzatura + ", codPrenotazione="
+                + codPrenotazione + "]";
+    }
+
 }

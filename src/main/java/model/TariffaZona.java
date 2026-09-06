@@ -37,4 +37,41 @@ public class TariffaZona {
     public void setTariffaGiornaliera(Integer tariffaGiornaliera) {
         TariffaGiornaliera = tariffaGiornaliera;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codStagione == null) ? 0 : codStagione.hashCode());
+        result = prime * result + ((codZona == null) ? 0 : codZona.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        TariffaZona other = (TariffaZona) obj;
+        if (codStagione == null) {
+            if (other.codStagione != null)
+                return false;
+        } else if (!codStagione.equals(other.codStagione))
+            return false;
+        if (codZona == null) {
+            if (other.codZona != null)
+                return false;
+        } else if (!codZona.equals(other.codZona))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "TariffaZona [codStagione=" + codStagione + ", codZona=" + codZona + ", TariffaGiornaliera="
+                + TariffaGiornaliera + "]";
+    }
 }

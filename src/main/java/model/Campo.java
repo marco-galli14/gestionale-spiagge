@@ -79,5 +79,37 @@ public class Campo {
     public void setTipoFondo(String tipoFondo) {
         this.tipoFondo = tipoFondo;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codCampo == null) ? 0 : codCampo.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Campo other = (Campo) obj;
+        if (codCampo == null) {
+            if (other.codCampo != null)
+                return false;
+        } else if (!codCampo.equals(other.codCampo))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Campo [codCampo=" + codCampo + ", nomeCampo=" + nomeCampo + ", stato=" + stato + ", tipoCampo="
+                + tipoCampo + ", tipoSport=" + tipoSport + ", richiedeRete=" + richiedeRete + ", tipoFondo=" + tipoFondo
+                + "]";
+    }
     
 }

@@ -38,4 +38,34 @@ public class Stagione {
     public void setDataFine(Date dataFine) {
         this.dataFine = dataFine;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codStagione == null) ? 0 : codStagione.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Stagione other = (Stagione) obj;
+        if (codStagione == null) {
+            if (other.codStagione != null)
+                return false;
+        } else if (!codStagione.equals(other.codStagione))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Stagione [codStagione=" + codStagione + ", dataInizio=" + dataInizio + ", dataFine=" + dataFine + "]";
+    }
 }

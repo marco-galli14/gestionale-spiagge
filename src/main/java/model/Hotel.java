@@ -38,4 +38,31 @@ public class Hotel {
     public void setScontoHotel(int scontoHotel) {
         this.scontoHotel = scontoHotel;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + codHotel;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Hotel other = (Hotel) obj;
+        if (codHotel != other.codHotel)
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Hotel [codHotel=" + codHotel + ", nomeHotel=" + nomeHotel + ", scontoHotel=" + scontoHotel + "]";
+    }
 }

@@ -28,5 +28,32 @@ public class Gruppo {
     public void setScontoGruppo(int scontoGruppo) {
         this.scontoGruppo = scontoGruppo;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + idGruppo;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Gruppo other = (Gruppo) obj;
+        if (idGruppo != other.idGruppo)
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Gruppo [idGruppo=" + idGruppo + ", scontoGruppo=" + scontoGruppo + "]";
+    }
     
 }

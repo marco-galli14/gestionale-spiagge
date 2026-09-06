@@ -81,5 +81,37 @@ public class PrenotazioneCampo {
     public void setCodDipendente(int codDipendente) {
         CodDipendente = codDipendente;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codPrenotazioneCampo == null) ? 0 : codPrenotazioneCampo.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PrenotazioneCampo other = (PrenotazioneCampo) obj;
+        if (codPrenotazioneCampo == null) {
+            if (other.codPrenotazioneCampo != null)
+                return false;
+        } else if (!codPrenotazioneCampo.equals(other.codPrenotazioneCampo))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "PrenotazioneCampo [codPrenotazioneCampo=" + codPrenotazioneCampo + ", dataPrenotazione="
+                + dataPrenotazione + ", oraInizio=" + oraInizio + ", oraFine=" + oraFine + ", cf=" + cf + ", codCampo="
+                + codCampo + ", CodDipendente=" + CodDipendente + "]";
+    }
     
 }

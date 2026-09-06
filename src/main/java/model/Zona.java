@@ -38,4 +38,34 @@ public class Zona {
         this.descrizione = descrizione;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codZona == null) ? 0 : codZona.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Zona other = (Zona) obj;
+        if (codZona == null) {
+            if (other.codZona != null)
+                return false;
+        } else if (!codZona.equals(other.codZona))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Zona [codZona=" + codZona + ", nomeZona=" + nomeZona + ", descrizione=" + descrizione + "]";
+    }
+
 }

@@ -70,4 +70,36 @@ public class Pagamento {
     public void setCodPrenotazione(String codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codPagamento == null) ? 0 : codPagamento.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Pagamento other = (Pagamento) obj;
+        if (codPagamento == null) {
+            if (other.codPagamento != null)
+                return false;
+        } else if (!codPagamento.equals(other.codPagamento))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Pagamento [codPagamento=" + codPagamento + ", importo=" + importo + ", dataPagamento=" + dataPagamento
+                + ", metodoPagamento=" + metodoPagamento + ", codNoleggio=" + codNoleggio + ", codPrenotazione="
+                + codPrenotazione + "]";
+    }
 }

@@ -59,4 +59,35 @@ public class PacchettoSconto {
         this.percentualeSconto = percentualeSconto;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codPacchetto == null) ? 0 : codPacchetto.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        PacchettoSconto other = (PacchettoSconto) obj;
+        if (codPacchetto == null) {
+            if (other.codPacchetto != null)
+                return false;
+        } else if (!codPacchetto.equals(other.codPacchetto))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "PacchettoSconto [codPacchetto=" + codPacchetto + ", nomePacchetto=" + nomePacchetto + ", giorniMinimi="
+                + giorniMinimi + ", giorniMassimi=" + giorniMassimi + ", percentualeSconto=" + percentualeSconto + "]";
+    }
+
 }

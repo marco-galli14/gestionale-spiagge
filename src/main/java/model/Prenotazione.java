@@ -102,4 +102,36 @@ public class Prenotazione {
         this.idGruppo = idGruppo;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codPrenotazione == null) ? 0 : codPrenotazione.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Prenotazione other = (Prenotazione) obj;
+        if (codPrenotazione == null) {
+            if (other.codPrenotazione != null)
+                return false;
+        } else if (!codPrenotazione.equals(other.codPrenotazione))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Prenotazione [codPrenotazione=" + codPrenotazione + ", dataInizio=" + dataInizio + ", dataFine="
+                + dataFine + ", PrezzoTotale=" + PrezzoTotale + ", statoPagmento=" + statoPagmento + ", codDipendente="
+                + codDipendente + ", cf=" + cf + ", codPacchetto=" + codPacchetto + ", idGruppo=" + idGruppo + "]";
+    }
+
 }
