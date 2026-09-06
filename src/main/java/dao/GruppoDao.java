@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class GruppoDao {
+public class GruppoDAO {
 
     public boolean insertGruppo(int idGruppo, int scontoGruppo) {
 

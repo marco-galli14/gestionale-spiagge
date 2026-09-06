@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class HotelDao {
+public class HotelDAO {
 
     public boolean insertHotel(int codHotel, String nomeHotel, int scontoHotel) {
         

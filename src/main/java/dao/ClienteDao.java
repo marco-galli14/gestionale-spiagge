@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class ClienteDao {
+public class ClienteDAO {
 
     public boolean insertCliente(String cf, String nomeCliente, String cognomeCliente, String email, int telefono, Integer codHotel) {
         
