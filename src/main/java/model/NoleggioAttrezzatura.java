@@ -5,7 +5,7 @@ import java.time.LocalTime;
 
 public class NoleggioAttrezzatura {
 
-    private String codNoleggio;
+    private int codNoleggio;
     private LocalDate dataNoleggio;
     private LocalTime oraInizio;
     private int durataOre;
@@ -18,7 +18,7 @@ public class NoleggioAttrezzatura {
     public NoleggioAttrezzatura() {
     }
 
-    public NoleggioAttrezzatura(String codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, int durataOre, int costoTotale, int codDipendente, String cf, String codAttrezzatura, String codPrenotazione) {
+    public NoleggioAttrezzatura(int codNoleggio, LocalDate dataNoleggio, LocalTime oraInizio, int durataOre, int costoTotale, int codDipendente, String cf, String codAttrezzatura, String codPrenotazione) {
         this.codNoleggio = codNoleggio;
         this.dataNoleggio = dataNoleggio;
         this.oraInizio = oraInizio;
@@ -30,11 +30,11 @@ public class NoleggioAttrezzatura {
         this.codPrenotazione = codPrenotazione;
     }
 
-    public String getCodNoleggio() {
+    public int getCodNoleggio() {
         return codNoleggio;
     }
 
-    public void setCodNoleggio(String codNoleggio) {
+    public void setCodNoleggio(int codNoleggio) {
         this.codNoleggio = codNoleggio;
     }
 
@@ -100,39 +100,6 @@ public class NoleggioAttrezzatura {
 
     public void setCodPrenotazione(String codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((codNoleggio == null) ? 0 : codNoleggio.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        NoleggioAttrezzatura other = (NoleggioAttrezzatura) obj;
-        if (codNoleggio == null) {
-            if (other.codNoleggio != null)
-                return false;
-        } else if (!codNoleggio.equals(other.codNoleggio))
-            return false;
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "NoleggioAttrezzatura [codNoleggio=" + codNoleggio + ", dataNoleggio=" + dataNoleggio + ", oraInizio="
-                + oraInizio + ", durataOre=" + durataOre + ", costoTotale=" + costoTotale + ", codDipendente="
-                + codDipendente + ", cf=" + cf + ", codAttrezzatura=" + codAttrezzatura + ", codPrenotazione="
-                + codPrenotazione + "]";
     }
 
 }

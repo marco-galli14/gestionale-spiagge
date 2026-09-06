@@ -1,23 +1,6 @@
-import javafx.application.Application;
-
-/**
- * Main class of the application.
- */
-public final class Main {
-
-    /**
-     * This private constructor prevents istantiation.
-     */
-    private Main() {
-
-    }
-
-    /**
-     * Main method.
-     * 
-     * @param args ignored.
-     */
-    public static void main(final String[] args) {
-        Application.launch(GestionaleSpiaggia.class, args);
+public class Main {
+    public static void main(String[] args) {
+        // Chiama il main della vera classe JavaFX
+        GestionaleSpiaggia.main(args);
     }
 }
