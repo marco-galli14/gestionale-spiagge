@@ -142,7 +142,8 @@ public class MainTest {
 
         for (var p : dao1.getPrenotazioniNonSaldate()) {
             System.out.print(p + "\n");
-        }*/
+        }
+        */
 
     }
 } 
