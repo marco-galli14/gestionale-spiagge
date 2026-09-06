@@ -5,7 +5,7 @@ public class Cliente {
     private String nome;
     private String cognome;
     private String email;
-    private int telefono;
+    private String telefono;
     private Integer codHotel;
     private Integer idGruppo;
 
@@ -13,7 +13,7 @@ public class Cliente {
 
     }
 
-    public Cliente(String cf, String nome, String cognome, String email, int telefono, Integer codHotel,
+    public Cliente(String cf, String nome, String cognome, String email, String telefono, Integer codHotel,
             Integer idGruppo) {
         this.cf = cf;
         this.nome = nome;
@@ -40,7 +40,7 @@ public class Cliente {
         return email;
     }
 
-    public int getTelefono() {
+    public String getTelefono() {
         return telefono;
     }
 
@@ -68,7 +68,7 @@ public class Cliente {
         this.email = email;
     }
 
-    public void setTelefono(int telefono) {
+    public void setTelefono(String telefono) {
         this.telefono = telefono;
     }
 

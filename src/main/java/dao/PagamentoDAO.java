@@ -5,7 +5,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.time.LocalDate;
 
-import javafx.util.Pair;
+import common.Pair;
 
 public class PagamentoDAO {
 
