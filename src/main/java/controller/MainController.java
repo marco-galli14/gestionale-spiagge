@@ -6,6 +6,7 @@ import java.util.List;
 
 import common.Pair;
 import common.StoricoPrenotazione;
+import dao.AllestimentoDAO;
 import dao.ClienteDAO;
 import dao.DipendenteDAO;
 import dao.MappaDAO;
@@ -18,6 +19,7 @@ import dao.PrenotazioneGiornalieraDAO;
 import dao.ZonaDAO;
 import model.Cliente;
 import model.Dipendente;
+import model.Prenotazione;
 import model.PrenotazioneCampo;
 import view.MainView;
 
@@ -35,6 +37,7 @@ public final class MainController {
     private final ZonaDAO zonaDao;
     private final PrenotazioneCampoDAO prenotazioneCampoDao;
     private final OmbrelloneDAO ombrelloneDao;
+    private final AllestimentoDAO allestimentoDao;
 
     public MainController(MainView view) {
         this.view = view;
@@ -49,6 +52,7 @@ public final class MainController {
         this.zonaDao = new ZonaDAO();
         this.prenotazioneCampoDao = new PrenotazioneCampoDAO();
         this.ombrelloneDao = new OmbrelloneDAO();
+        this.allestimentoDao = new AllestimentoDAO();
 
         inizializzaEventiUI();
         ricaricaDatiGlobali();
@@ -56,18 +60,11 @@ public final class MainController {
 
     private void inizializzaEventiUI() {
         
-        // Listener per recuperare la lista clienti e fornirla al popup di ricerca
-        view.setOnRichiediListaClienti(() -> {
-            return clienteDao.getTuttiIClienti();
-        });
+        view.setOnRichiediListaClienti(() -> clienteDao.getTuttiIClienti());
 
-        view.setOnCellaOmbrelloneClicked(numeroCella -> {
-            gestisciInterazioneCellaSpiaggia(numeroCella);
-        });
+        view.setOnCellaOmbrelloneClicked(this::gestisciInterazioneCellaSpiaggia);
 
-        view.setOnCambioDataOraMappa((dataRiferimento, oraRiferimento) -> {
-            aggiornaMappaSpiaggiaCompleta(dataRiferimento, oraRiferimento);
-        });
+        view.setOnCambioDataOraMappa(this::aggiornaMappaSpiaggiaCompleta);
 
         view.setOnSalvaClienteAction((cf, nome, cognome, email, telefono, codHotel) -> {
             boolean ok = clienteDao.insertCliente(cf, nome, cognome, email, telefono, codHotel);
@@ -79,13 +76,18 @@ public final class MainController {
             view.mostraMessaggioEsito(ok, "Gruppo assegnato con successo!", "Errore nell'assegnazione del gruppo.");
         });
 
-        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf, numeriOmbrelloni) -> {
+        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf, numeriOmbrelloni, qtaLettini, qtaSdraio, qtaSedie) -> {
             int nuovoCodice = prenotazioneDao.addPrenotazione(dataInizio, dataFine, codDipendente, cf);
             if (nuovoCodice > 0) {
                 for (int numOmbrellone : numeriOmbrelloni) {
                     LocalDate corrente = dataInizio;
                     while (!corrente.isAfter(dataFine)) {
                         prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(nuovoCodice, numOmbrellone, corrente);
+                        
+                        aggiornaOInserisciAllestimento("LETTINO", nuovoCodice, numOmbrellone, corrente, qtaLettini);
+                        aggiornaOInserisciAllestimento("SDRAIO", nuovoCodice, numOmbrellone, corrente, qtaSdraio);
+                        aggiornaOInserisciAllestimento("SEDIA", nuovoCodice, numOmbrellone, corrente, qtaSedie);
+
                         corrente = corrente.plusDays(1);
                     }
                 }
@@ -101,6 +103,19 @@ public final class MainController {
                 view.mostraMessaggioEsito(false, "", "Errore nella creazione della prenotazione.");
             }
         });
+
+        view.setOnModificaAllestimentoGiornaliero((codPrenotazione, numOmbrellone, data, qtaLettini, qtaSdraio, qtaSedie) -> {
+            aggiornaOInserisciAllestimento("LETTINO", codPrenotazione, numOmbrellone, data, qtaLettini);
+            aggiornaOInserisciAllestimento("SDRAIO", codPrenotazione, numOmbrellone, data, qtaSdraio);
+            aggiornaOInserisciAllestimento("SEDIA", codPrenotazione, numOmbrellone, data, qtaSedie);
+
+            boolean ok = prenotazioneDao.updateCostoTotale(codPrenotazione);
+            view.mostraMessaggioEsito(ok, "Allestimento del giorno " + data + " aggiornato!", "Errore nell'aggiornamento dell'allestimento.");
+        });
+
+        view.setOnRichiediAllestimentiGiorno((codPren, numOmb, data) -> 
+            allestimentoDao.getAllestimenti(codPren, numOmb, data)
+        );
 
         view.setOnEliminaPrenotazioneSpiaggiaAction(codPren -> {
             boolean eliminata = prenotazioneDao.eliminaPrenotazione(codPren);
@@ -157,11 +172,30 @@ public final class MainController {
             ricaricaDatiGlobali();
         });
 
+        view.setOnVisualizzaContabilitaAction(() -> {
+            List<Prenotazione> nonSaldate = prenotazioneDao.getPrenotazioniNonSaldate();
+            Pair<Integer, Integer> reportOggi = pagamentoDao.getDailyReport(LocalDate.now());
+            view.mostraCentroContabilita(nonSaldate, reportOggi.key(), reportOggi.value());
+        });
+
+        view.setOnReportPerDataAction(data -> {
+            Pair<Integer, Integer> report = pagamentoDao.getDailyReport(data);
+            view.mostraReportIncassi(report.key(), report.value());
+        });
+
         view.setOnRegistraPagamentoPrenotazione((codPag, importo, data, metodo, codPren) -> {
             boolean ok = pagamentoDao.insertPagamentoPrenotazione(codPag, importo, data, metodo, codPren);
             if (ok) {
                 prenotazioneDao.updateStatoPagamento(codPren);
-                view.aggiornaListaPrenotazioniNonSaldate(prenotazioneDao.getPrenotazioniNonSaldate());
+                view.mostraMessaggioEsito(true, "Pagamento registrato con successo!", "");
+                
+                List<Prenotazione> nonSaldate = prenotazioneDao.getPrenotazioniNonSaldate();
+                Pair<Integer, Integer> reportOggi = pagamentoDao.getDailyReport(LocalDate.now());
+                view.mostraCentroContabilita(nonSaldate, reportOggi.key(), reportOggi.value());
+                
+                ricaricaDatiGlobali();
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore durante la registrazione del pagamento.");
             }
         });
 
@@ -180,6 +214,17 @@ public final class MainController {
             List<ZonaDAO.ZonaOccupazioneInfo> percentuali = zonaDao.getPercentualiOccupazioneZone(dataInizio, dataFine);
             view.mostraStatisticheZone(percentuali);
         });
+    }
+
+    private void aggiornaOInserisciAllestimento(String codSeduta, int codPrenotazione, int numOmbrellone, LocalDate data, int quantita) {
+        if (quantita > 0) {
+            boolean ok = allestimentoDao.updateAllestimento(quantita, codSeduta, codPrenotazione, numOmbrellone, data);
+            if (!ok) {
+                allestimentoDao.addAllestimento(codSeduta, codPrenotazione, numOmbrellone, data, quantita);
+            }
+        } else {
+            allestimentoDao.deleteAllestimento(codSeduta, codPrenotazione, numOmbrellone, data);
+        }
     }
 
     private void aggiornaMappaSpiaggiaCompleta(LocalDate dataRiferimento, LocalTime oraRiferimento) {
