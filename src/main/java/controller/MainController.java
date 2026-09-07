@@ -10,12 +10,17 @@ import common.StoricoPrenotazione;
 import dao.AllestimentoDAO;
 import dao.ClienteDAO;
 import dao.DipendenteDAO;
+import dao.GruppoDAO;
+import dao.HotelDAO;
 import dao.MappaDAO;
 import dao.NoleggioAttrezzaturaDAO;
 import dao.PagamentoDAO;
 import dao.PrenotazioneCampoDAO;
 import dao.PrenotazioneDAO;
 import dao.PrenotazioneGiornalieraDAO;
+import dao.StagioneDAO;
+import dao.TariffaNoleggioDAO;
+import dao.TariffaZonaDAO;
 import dao.ZonaDAO;
 import javafx.stage.Stage;
 import model.Allestimento;
@@ -39,6 +44,13 @@ public class MainController {
     private final ZonaDAO zonaDao;
     private final PrenotazioneGiornalieraDAO prenotazioneGiornalieraDao;
     private final AllestimentoDAO allestimentoDao;
+    
+    // DAO DEL MENU ALTRO / SETUP
+    private final GruppoDAO gruppoDao;
+    private final HotelDAO hotelDao;
+    private final StagioneDAO stagioneDao;
+    private final TariffaZonaDAO tariffaZonaDao;
+    private final TariffaNoleggioDAO tariffaNoleggioDao;
 
     public MainController(Stage stage) {
         this.view = new MainView(stage);
@@ -52,14 +64,18 @@ public class MainController {
         this.zonaDao = new ZonaDAO();
         this.prenotazioneGiornalieraDao = new PrenotazioneGiornalieraDAO();
         this.allestimentoDao = new AllestimentoDAO();
+        
+        this.gruppoDao = new GruppoDAO();
+        this.hotelDao = new HotelDAO();
+        this.stagioneDao = new StagioneDAO();
+        this.tariffaZonaDao = new TariffaZonaDAO();
+        this.tariffaNoleggioDao = new TariffaNoleggioDAO();
 
         inizializzaListener();
     }
 
     public void avvia() {
-        // Prima costruiamo la grafica (creando la gridOmbrelloni in memoria)
         view.mostraFinestra();
-        // ORA carichiamo i dati nella griglia
         aggiornaDatiMappa(LocalDate.now(), LocalTime.now());
     }
 
@@ -100,9 +116,9 @@ public class MainController {
                     while (!currentDate.isAfter(dataFine)) {
                         prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(codPren, numOmb, currentDate);
                         
-                        if (lettini > 0) allestimentoDao.addAllestimento("LETTINO", codPren, numOmb, currentDate, lettini);
-                        if (sdraio > 0) allestimentoDao.addAllestimento("SDRAIO", codPren, numOmb, currentDate, sdraio);
-                        if (sedie > 0) allestimentoDao.addAllestimento("SEDIA", codPren, numOmb, currentDate, sedie);
+                        if (lettini > 0) allestimentoDao.addAllestimento("LET", codPren, numOmb, currentDate, lettini);
+                        if (sdraio > 0) allestimentoDao.addAllestimento("SDR", codPren, numOmb, currentDate, sdraio);
+                        if (sedie > 0) allestimentoDao.addAllestimento("SED", codPren, numOmb, currentDate, sedie);
                         
                         currentDate = currentDate.plusDays(1);
                     }
@@ -113,6 +129,30 @@ public class MainController {
                 aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
             } else {
                 view.mostraMessaggioEsito(false, "", "Impossibile creare la prenotazione.");
+            }
+        });
+
+        view.setOnAggiungiPrenotazioneGiornaliera((cod, num, data) -> {
+            boolean ok = prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(cod, num, data);
+            if (ok) {
+                prenotazioneDao.updateCostoTotale(cod);
+                prenotazioneDao.updateStatoPagamento(cod);
+                view.mostraMessaggioEsito(true, "Prenotazione giornaliera aggiunta con successo!", "");
+                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore: la cella potrebbe essere già occupata o il codice è errato.");
+            }
+        });
+
+        view.setOnEliminaPrenotazioneGiornaliera((cod, num, data) -> {
+            boolean ok = prenotazioneGiornalieraDao.deletePrenotazioneGiornaliera(cod, num, data);
+            if (ok) {
+                prenotazioneDao.updateCostoTotale(cod);
+                prenotazioneDao.updateStatoPagamento(cod);
+                view.mostraMessaggioEsito(true, "Prenotazione giornaliera rimossa con successo!", "");
+                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore durante la rimozione della giornata.");
             }
         });
 
@@ -145,7 +185,6 @@ public class MainController {
             aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
         });
 
-        // REGISTRAZIONE PAGAMENTI
         view.setOnRegistraPagamentoPrenotazione((importo, dataPag, metodo, codPren) -> {
             boolean ok = pagamentoDao.insertPagamentoPrenotazione(importo, dataPag, metodo, codPren);
             if (ok) {
@@ -194,16 +233,18 @@ public class MainController {
         });
 
         view.setOnModificaAllestimentoGiornaliero((codPren, numOmb, data, lettini, sdraio, sedie) -> {
-            allestimentoDao.deleteAllestimento("LETTINO", codPren, numOmb, data);
-            allestimentoDao.deleteAllestimento("SDRAIO", codPren, numOmb, data);
-            allestimentoDao.deleteAllestimento("SEDIA", codPren, numOmb, data);
+            allestimentoDao.deleteAllestimento("LET", codPren, numOmb, data);
+            allestimentoDao.deleteAllestimento("SDR", codPren, numOmb, data);
+            allestimentoDao.deleteAllestimento("SED", codPren, numOmb, data);
             
-            if (lettini > 0) allestimentoDao.addAllestimento("LETTINO", codPren, numOmb, data, lettini);
-            if (sdraio > 0) allestimentoDao.addAllestimento("SDRAIO", codPren, numOmb, data, sdraio);
-            if (sedie > 0) allestimentoDao.addAllestimento("SEDIA", codPren, numOmb, data, sedie);
+            if (lettini > 0) allestimentoDao.addAllestimento("LET", codPren, numOmb, data, lettini);
+            if (sdraio > 0) allestimentoDao.addAllestimento("SDR", codPren, numOmb, data, sdraio);
+            if (sedie > 0) allestimentoDao.addAllestimento("SED", codPren, numOmb, data, sedie);
 
             prenotazioneDao.updateCostoTotale(codPren);
-            view.mostraMessaggioEsito(true, "Allestimento aggiornato con successo!", "");
+            prenotazioneDao.updateStatoPagamento(codPren);
+            
+            view.mostraMessaggioEsito(true, "Allestimento aggiornato e prezzo ricalcolato con successo!", "");
             aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
         });
 
@@ -220,10 +261,48 @@ public class MainController {
             Pair<Integer, Integer> report = pagamentoDao.getDailyReport(data);
             view.mostraReportIncassi(report.key(), report.value());
         });
+
+        // -------------------------------------------------------------------------
+        // COLLEGAMENTO REALE DEI BOTTONI DEL MENU "ALTRO / SETUP" AI DAO
+        // -------------------------------------------------------------------------
+        
+        view.setOnCreaGruppoCompletoAction((idGruppo, sconto) -> {
+            boolean ok = gruppoDao.insertGruppo(idGruppo, sconto);
+            view.mostraMessaggioEsito(ok, "Gruppo creato con successo!", "Errore durante la creazione del gruppo.");
+        });
+
+        view.setOnAssegnaGruppoClienteAction((cf, idGruppo) -> {
+            boolean ok = clienteDao.setGroup(cf, idGruppo);
+            view.mostraMessaggioEsito(ok, "Gruppo assegnato al cliente con successo!", "Errore durante l'assegnazione del gruppo.");
+        });
+
+        view.setOnSalvaHotelAction((codHotel, nomeHotel, scontoHotel) -> {
+            boolean ok = hotelDao.insertHotel(codHotel, nomeHotel, scontoHotel);
+            view.mostraMessaggioEsito(ok, "Hotel convenzionato aggiunto con successo!", "Errore durante il salvataggio dell'hotel.");
+        });
+
+        view.setOnSalvaDipendenteCompletoAction((codDip, nome, cognome, user, pwd, ruolo) -> {
+            boolean ok = dipendenteDao.insertDipendente(codDip, nome, cognome, user, pwd, ruolo);
+            view.mostraMessaggioEsito(ok, "Dipendente registrato con successo!", "Errore durante la registrazione del dipendente.");
+        });
+
+        view.setOnSalvaStagioneAction((codStagione, inizio, fine) -> {
+            boolean ok = stagioneDao.inserisciStagione(codStagione, inizio, fine);
+            view.mostraMessaggioEsito(ok, "Stagione registrata con successo!", "Errore durante la registrazione della stagione.");
+        });
+
+        view.setOnSalvaTariffaZonaListener((codStagione, codZona, tariffa) -> {
+            boolean ok = tariffaZonaDao.inserisciTariffaZona(codStagione, codZona, tariffa);
+            view.mostraMessaggioEsito(ok, "Tariffa zona salvata con successo!", "Errore durante il salvataggio della tariffa zona.");
+        });
+
+        view.setOnSalvaTariffaNoleggioListener((codStagione, codAttrezzatura, tariffaOraria) -> {
+            boolean ok = tariffaNoleggioDao.inserisciTariffaNoleggio(codStagione, codAttrezzatura, tariffaOraria);
+            view.mostraMessaggioEsito(ok, "Tariffa noleggio salvata con successo!", "Errore durante il salvataggio della tariffa noleggio.");
+        });
     }
 
     private void apriCentroContabilita() {
-        // Recuperiamo il Pair aggiornato
         List<Pair<Prenotazione, Integer>> nonSaldatePren = prenotazioneDao.getPrenotazioniNonSaldate();
         List<StoricoNoleggio> nonSaldateNol = noleggioAttrezzaturaDao.getNoleggiNonSaldatiEsterni();
         Pair<Integer, Integer> reportOggi = pagamentoDao.getDailyReport(LocalDate.now());

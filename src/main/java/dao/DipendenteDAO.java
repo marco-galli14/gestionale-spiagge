@@ -11,7 +11,7 @@ public class DipendenteDAO {
 
     public boolean insertDipendente(int codDipendente, String nome, String cognome, String username, String pwd, String ruolo) {
 
-        String query = "INSERT INTO DIPENDENTE (CodDipendente, Nome, Cognome, Username, Password, Ruolo) " +
+        String query = "INSERT INTO DIPENDENTE (CodDipendente, Nome, Cognome, Username, Pwd, Ruolo) " +
                         "VALUES (?, ?, ?, ?, ?, ?)";
         
         try (Connection con = DatabaseConnection.getConnection();

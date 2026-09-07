@@ -167,53 +167,16 @@ public class PrenotazioneDAO {
     }
 
     public boolean eliminaPrenotazione(int codPrenotazione) {
-        String deleteAllestimenti = "DELETE FROM allestimento WHERE CodPrenotazione = ?;";
-        String deleteGiornaliere = "DELETE FROM prenotazione_giornaliera WHERE CodPrenotazione = ?;";
-        String deletePagamenti = "DELETE FROM pagamento WHERE CodPrenotazione = ?;";
-        String scollegaNoleggi = "UPDATE noleggio_attrezzatura SET CodPrenotazione = NULL WHERE CodPrenotazione = ?;";
-        String deletePrenotazione = "DELETE FROM prenotazione WHERE CodPrenotazione = ?;";
+        // Avendo impostato i vincoli CASCADE e SET NULL nel database, 
+        // basta eliminare la prenotazione padre. Il database pulirà automaticamente
+        // ombrelloni, allestimenti, pagamenti e scollegherà i noleggi!
+        String sql = "DELETE FROM prenotazione WHERE CodPrenotazione = ?;";
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            conn.setAutoCommit(false);
-
-            try {
-                try (PreparedStatement stmt1 = conn.prepareStatement(deleteAllestimenti)) {
-                    stmt1.setInt(1, codPrenotazione);
-                    stmt1.executeUpdate();
-                }
-
-                try (PreparedStatement stmt2 = conn.prepareStatement(deleteGiornaliere)) {
-                    stmt2.setInt(1, codPrenotazione);
-                    stmt2.executeUpdate();
-                }
-
-                try (PreparedStatement stmt3 = conn.prepareStatement(deletePagamenti)) {
-                    stmt3.setInt(1, codPrenotazione);
-                    stmt3.executeUpdate();
-                }
-
-                try (PreparedStatement stmt4 = conn.prepareStatement(scollegaNoleggi)) {
-                    stmt4.setInt(1, codPrenotazione);
-                    stmt4.executeUpdate();
-                }
-
-                boolean result = false;
-                try (PreparedStatement stmt5 = conn.prepareStatement(deletePrenotazione)) {
-                    stmt5.setInt(1, codPrenotazione);
-                    result = stmt5.executeUpdate() > 0;
-                }
-
-                conn.commit();
-                return result;
-
-            } catch (SQLException e) {
-                conn.rollback();
-                e.printStackTrace();
-                return false;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, codPrenotazione);
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
