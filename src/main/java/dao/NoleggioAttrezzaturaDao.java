@@ -113,4 +113,37 @@ public class NoleggioAttrezzaturaDAO {
         }
         return storicoNoleggi;
     }
+
+    public List<StoricoNoleggio> getNoleggiNonSaldatiEsterni() {
+        List<StoricoNoleggio> nonSaldate = new ArrayList<>();
+        
+        String query = "SELECT c.CF, c.Nome, c.Cognome, n.CodNoleggio, n.DataNoleggio, n.codAttrezzatura, n.OraInizio, n.DurataOre, n.CostoTotale " +
+                    "FROM cliente c, noleggio_attrezzatura n " +
+                    "WHERE c.CF = n.CF " +
+                    "AND n.CodPrenotazione IS NULL " +
+                    "AND n.CodNoleggio NOT IN (SELECT p.CodNoleggio FROM pagamento p WHERE p.CodNoleggio IS NOT NULL)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(query);
+            ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String cf = rs.getString("CF");
+                String nome = rs.getString("Nome");
+                String cognome = rs.getString("Cognome");
+                int codNoleggio = rs.getInt("CodNoleggio");
+                LocalDate dataNoleggio = rs.getDate("DataNoleggio").toLocalDate();
+                String codAttrezzatura = rs.getString("codAttrezzatura");
+                LocalTime oraInizio = rs.getTime("OraInizio").toLocalTime();
+                int durataOre = rs.getInt("DurataOre");
+                int costoTotale = rs.getInt("CostoTotale");
+
+                nonSaldate.add(new StoricoNoleggio(cf, nome, cognome, codNoleggio, dataNoleggio, codAttrezzatura, oraInizio, durataOre, costoTotale));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return nonSaldate;
+    }
 }

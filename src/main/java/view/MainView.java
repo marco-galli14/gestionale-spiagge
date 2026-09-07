@@ -50,7 +50,6 @@ public class MainView {
     private Scene scenaMenuAttrezzature;
     private Scene scenaMenuCampi;
     private Scene scenaMenuOmbrelloni;
-    private Scene scenaCentroContabilita;
     private Scene scenaStatistiche;
     
     private final Map<String, Button> bottoniCampiMap = new HashMap<>();
@@ -67,6 +66,7 @@ public class MainView {
     private OnCreaPrenotazioneCampoListener onCreaPrenotazioneCampoAction;
     private Consumer<Integer> onEliminaPrenotazioneCampoAction;
     private OnRegistraPagamentoListener onRegistraPagamentoPrenotazione;
+    private OnRegistraPagamentoNoleggioListener onRegistraPagamentoNoleggio;
     private Runnable onRichiediTopDipendentePrenotazioni;
     private Runnable onRichiediTopDipendenteNoleggi;
     private BiConsumer<LocalDate, LocalDate> onRichiediOccupazioneZone;
@@ -100,7 +100,11 @@ public class MainView {
     }
     @FunctionalInterface
     public interface OnRegistraPagamentoListener {
-        void onRegistra(String codPag, int importo, LocalDate data, String metodo, int codPren);
+        void onRegistra(int importo, LocalDate data, String metodo, int codPren);
+    }
+    @FunctionalInterface
+    public interface OnRegistraPagamentoNoleggioListener {
+        void onRegistraNol(int importo, LocalDate data, String metodo, int codNoleggio);
     }
     @FunctionalInterface
     public interface OnModificaAllestimentoGiornalieroListener {
@@ -131,6 +135,7 @@ public class MainView {
     public void setOnCreaPrenotazioneCampoAction(OnCreaPrenotazioneCampoListener listener) { this.onCreaPrenotazioneCampoAction = listener; }
     public void setOnEliminaPrenotazioneCampoAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneCampoAction = listener; }
     public void setOnRegistraPagamentoPrenotazione(OnRegistraPagamentoListener listener) { this.onRegistraPagamentoPrenotazione = listener; }
+    public void setOnRegistraPagamentoNoleggio(OnRegistraPagamentoNoleggioListener listener) { this.onRegistraPagamentoNoleggio = listener; }
     public void setOnRichiediTopDipendentePrenotazioni(Runnable listener) { this.onRichiediTopDipendentePrenotazioni = listener; }
     public void setOnRichiediTopDipendenteNoleggi(Runnable listener) { this.onRichiediTopDipendenteNoleggi = listener; }
     public void setOnRichiediOccupazioneZone(BiConsumer<LocalDate, LocalDate> listener) { this.onRichiediOccupazioneZone = listener; }
@@ -380,10 +385,6 @@ public class MainView {
         stage.setScene(scenaMenuCampi);
     }
 
-    private void cambiaCentroContabilita() {
-
-    }
-
     private void cambiaScenaStatistiche() {
         VBox layout = new VBox(15);
         layout.setPadding(new Insets(30));
@@ -401,21 +402,18 @@ public class MainView {
         btnIndietro.setPrefSize(180, 38);
         btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
 
-        // Azione 1: Dipendente con più prenotazioni
         btnTopDipPren.setOnAction(e -> {
             if (onRichiediTopDipendentePrenotazioni != null) {
                 onRichiediTopDipendentePrenotazioni.run();
             }
         });
 
-        // Azione 2: Dipendente con più noleggi
         btnTopDipNol.setOnAction(e -> {
             if (onRichiediTopDipendenteNoleggi != null) {
                 onRichiediTopDipendenteNoleggi.run();
             }
         });
 
-        // Azione 3: Percentuale occupazione spiaggia
         btnOccupazioneZone.setOnAction(e -> mostraFormOccupazioneZone());
 
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
@@ -624,7 +622,7 @@ public class MainView {
         colCognome.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCognome()));
 
         tabella.getColumns().addAll(colCf, colNome, colCognome);
-        tabella.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tabella.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         List<Cliente> clienti = onRichiediListaClienti.get();
         ObservableList<Cliente> masterData = FXCollections.observableArrayList(clienti != null ? clienti : new ArrayList<>());
@@ -1044,7 +1042,6 @@ public class MainView {
         TableColumn<PrenotazioneGiornaliera, LocalDate> colInizio = new TableColumn<>("Data Inizio");
         colInizio.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getDataRiferimento()));
 
-
         table.getColumns().addAll(colCod, colNum, colInizio);
         table.setItems(FXCollections.observableArrayList(storico));
 
@@ -1058,7 +1055,7 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    public void mostraCentroContabilita(List<Prenotazione> nonSaldate, int incassiPren, int incassiNol) {
+    public void mostraCentroContabilita(List<Pair<Prenotazione, Integer>> nonSaldatePren, List<StoricoNoleggio> nonSaldateNol, int incassiPren, int incassiNol) {
         VBox mainLayout = new VBox(15);
         mainLayout.setPadding(new Insets(20));
         mainLayout.setAlignment(Pos.TOP_CENTER);
@@ -1086,66 +1083,140 @@ public class MainView {
         boxCercaData.setAlignment(Pos.CENTER_LEFT);
         boxReport.getChildren().addAll(lblReportOggi, boxCercaData);
 
-        Label lblNonSaldate = new Label("PRENOTAZIONI NON SALDATE");
-        lblNonSaldate.setFont(new Font("System Bold", 14));
+        ComboBox<String> cmbTipoPagamento = new ComboBox<>();
+        cmbTipoPagamento.getItems().addAll("Prenotazioni Spiaggia", "Noleggi Esterni");
+        cmbTipoPagamento.setValue("Prenotazioni Spiaggia");
 
-        TableView<Prenotazione> tblNonSaldate = new TableView<>();
-        tblNonSaldate.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        HBox boxScelta = new HBox(10, new Label("Seleziona Categoria:"), cmbTipoPagamento);
+        boxScelta.setAlignment(Pos.CENTER_LEFT);
 
-        TableColumn<Prenotazione, Integer> colCod = new TableColumn<>("Cod. Pren.");
-        colCod.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getCodPrenotazione()));
+        StackPane containerTabella = new StackPane();
 
-        TableColumn<Prenotazione, String> colCf = new TableColumn<>("CF Cliente");
-        colCf.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getCf()));
+        // Tabella Prenotazioni (usa il Pair)
+        TableView<Pair<Prenotazione, Integer>> tblPrenotazioni = new TableView<>();
+        tblPrenotazioni.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        
+        TableColumn<Pair<Prenotazione, Integer>, Integer> colCodP = new TableColumn<>("Cod. Pren.");
+        colCodP.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().key().getCodPrenotazione()));
+        
+        TableColumn<Pair<Prenotazione, Integer>, String> colCfP = new TableColumn<>("CF Cliente");
+        colCfP.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().key().getCf()));
+        
+        TableColumn<Pair<Prenotazione, Integer>, Integer> colCostoP = new TableColumn<>("Totale (€)");
+        colCostoP.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().key().getPrezzoTotale()));
+        
+        TableColumn<Pair<Prenotazione, Integer>, Integer> colResiduo = new TableColumn<>("Da Pagare (€)");
+        colResiduo.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().value()));
 
-        TableColumn<Prenotazione, Integer> colCosto = new TableColumn<>("Costo Totale (€)");
-        colCosto.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getPrezzoTotale()));
+        tblPrenotazioni.getColumns().addAll(colCodP, colCfP, colCostoP, colResiduo);
+        tblPrenotazioni.setItems(FXCollections.observableArrayList(nonSaldatePren));
 
-        tblNonSaldate.getColumns().addAll(colCod, colCf, colCosto);
-        tblNonSaldate.setItems(FXCollections.observableArrayList(nonSaldate));
+        // Tabella Noleggi
+        TableView<StoricoNoleggio> tblNoleggi = new TableView<>();
+        tblNoleggi.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        TableColumn<StoricoNoleggio, Integer> colCodN = new TableColumn<>("Cod. Noleggio");
+        colCodN.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().codNoleggio()));
+        TableColumn<StoricoNoleggio, String> colCfN = new TableColumn<>("CF Cliente");
+        colCfN.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().cf()));
+        TableColumn<StoricoNoleggio, String> colAttrezN = new TableColumn<>("Attrezzatura");
+        colAttrezN.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().codAttrezzatura()));
+        TableColumn<StoricoNoleggio, Integer> colCostoN = new TableColumn<>("Totale (€)");
+        colCostoN.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().costoTotale()));
+        tblNoleggi.getColumns().addAll(colCodN, colCfN, colAttrezN, colCostoN);
+        tblNoleggi.setItems(FXCollections.observableArrayList(nonSaldateNol));
+
+        containerTabella.getChildren().add(tblPrenotazioni);
 
         GridPane gridPagamento = new GridPane();
         gridPagamento.setVgap(8); gridPagamento.setHgap(10);
         gridPagamento.setAlignment(Pos.CENTER_LEFT);
 
-        TextField txtCodPag = new TextField();
         TextField txtImporto = new TextField();
         DatePicker dpDataPag = new DatePicker(LocalDate.now());
         ComboBox<String> cmbMetodo = new ComboBox<>();
         cmbMetodo.getItems().addAll("CONTANTI", "CARTA", "POS", "BONIFICO");
         cmbMetodo.setValue("CONTANTI");
 
-        gridPagamento.add(new Label("Codice Pagamento:"), 0, 0); gridPagamento.add(txtCodPag, 1, 0);
-        gridPagamento.add(new Label("Importo (€):"), 0, 1);       gridPagamento.add(txtImporto, 1, 1);
-        gridPagamento.add(new Label("Data Pagamento:"), 2, 0);   gridPagamento.add(dpDataPag, 3, 0);
-        gridPagamento.add(new Label("Metodo:"), 2, 1);           gridPagamento.add(cmbMetodo, 3, 1);
+        gridPagamento.add(new Label("Importo (€):"), 0, 0);       gridPagamento.add(txtImporto, 1, 0);
+        gridPagamento.add(new Label("Data Pagamento:"), 0, 1);   gridPagamento.add(dpDataPag, 1, 1);
+        gridPagamento.add(new Label("Metodo:"), 2, 0);           gridPagamento.add(cmbMetodo, 3, 0);
 
-        tblNonSaldate.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+        cmbTipoPagamento.setOnAction(e -> {
+            if ("Prenotazioni Spiaggia".equals(cmbTipoPagamento.getValue())) {
+                containerTabella.getChildren().setAll(tblPrenotazioni);
+                txtImporto.clear();
+                txtImporto.setEditable(true);
+            } else {
+                containerTabella.getChildren().setAll(tblNoleggi);
+                txtImporto.clear();
+                txtImporto.setEditable(false);
+            }
+        });
+
+        // SUGGERIMENTO DINAMICO: Suggerisce automaticamente l'importo residuo
+        tblPrenotazioni.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
-                txtImporto.setText(String.valueOf(newSel.getPrezzoTotale()));
+                txtImporto.setText(String.valueOf(newSel.value()));
+            }
+        });
+
+        tblNoleggi.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            if (newSel != null) {
+                txtImporto.setText(String.valueOf(newSel.costoTotale()));
             }
         });
 
         Button btnRegistra = new Button("💳 Registra Pagamento");
         btnRegistra.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnRegistra.setOnAction(e -> {
-            Prenotazione sel = tblNonSaldate.getSelectionModel().getSelectedItem();
-            if (sel == null) {
-                mostraMessaggioEsito(false, "", "Seleziona prima una prenotazione dalla tabella.");
-                return;
-            }
-            try {
-                if (onRegistraPagamentoPrenotazione != null) {
-                    onRegistraPagamentoPrenotazione.onRegistra(
-                        txtCodPag.getText().trim(),
-                        Integer.parseInt(txtImporto.getText().trim()),
-                        dpDataPag.getValue(),
-                        cmbMetodo.getValue(),
-                        sel.getCodPrenotazione()
-                    );
+            if ("Prenotazioni Spiaggia".equals(cmbTipoPagamento.getValue())) {
+                Pair<Prenotazione, Integer> sel = tblPrenotazioni.getSelectionModel().getSelectedItem();
+                if (sel == null) {
+                    mostraMessaggioEsito(false, "", "Seleziona prima una prenotazione dalla tabella.");
+                    return;
                 }
-            } catch (Exception ex) {
-                mostraMessaggioEsito(false, "", "Verifica i dati del pagamento inseriti.");
+                try {
+                    int importoInserito = Integer.parseInt(txtImporto.getText().trim());
+                    int residuo = sel.value();
+                    
+                    if (importoInserito > residuo) {
+                        mostraMessaggioEsito(false, "", "L'importo inserito (" + importoInserito + "€) supera l'importo residuo da saldare (" + residuo + "€).");
+                        return;
+                    }
+                    if (onRegistraPagamentoPrenotazione != null) {
+                        onRegistraPagamentoPrenotazione.onRegistra(
+                            importoInserito,
+                            dpDataPag.getValue(),
+                            cmbMetodo.getValue(),
+                            sel.key().getCodPrenotazione()
+                        );
+                    }
+                } catch (Exception ex) {
+                    mostraMessaggioEsito(false, "", "Verifica i dati del pagamento inseriti.");
+                }
+            } else {
+                StoricoNoleggio sel = tblNoleggi.getSelectionModel().getSelectedItem();
+                if (sel == null) {
+                    mostraMessaggioEsito(false, "", "Seleziona prima un noleggio dalla tabella.");
+                    return;
+                }
+                try {
+                    int importoInserito = Integer.parseInt(txtImporto.getText().trim());
+                    if (importoInserito != sel.costoTotale()) {
+                        mostraMessaggioEsito(false, "", "Per i noleggi l'importo deve essere esattamente pari al costo totale (" + sel.costoTotale() + "€).");
+                        return;
+                    }
+                    if (onRegistraPagamentoNoleggio != null) {
+                        onRegistraPagamentoNoleggio.onRegistraNol(
+                            importoInserito,
+                            dpDataPag.getValue(),
+                            cmbMetodo.getValue(),
+                            sel.codNoleggio()
+                        );
+                    }
+                } catch (Exception ex) {
+                    mostraMessaggioEsito(false, "", "Verifica i dati del pagamento inseriti.");
+                }
             }
         });
 
@@ -1157,7 +1228,7 @@ public class MainView {
         boxAzioni.setAlignment(Pos.CENTER);
 
         mainLayout.getChildren().addAll(
-            lblTitle, boxReport, lblNonSaldate, tblNonSaldate, gridPagamento, boxAzioni
+            lblTitle, boxReport, boxScelta, containerTabella, gridPagamento, boxAzioni
         );
 
         ScrollPane scroll = new ScrollPane(mainLayout);
@@ -1206,10 +1277,6 @@ public class MainView {
 
     public void impostaTabellaNoleggi(List<StoricoNoleggio> storico) {
         this.listaStoricoNoleggiAttuali = storico; 
-    }
-
-    public void aggiornaTabellaNoleggi(List<StoricoNoleggio> storico) {
-        impostaTabellaNoleggi(storico);
     }
 
     public void mostraDettagliPrenotazioneCella(String codZona, String nomeZona, int codPrenotazione, String clientePrenotato) { 
@@ -1323,10 +1390,6 @@ public class MainView {
         alert.setContentText(sb.toString());
         alert.showAndWait();
     }
-
-    public void impostaTabellaPrenotazioni(List<StoricoPrenotazione> storico) { }
-    public void aggiornaTabellaPrenotazioni(List<StoricoPrenotazione> storico) { }
-    public void aggiornaListaPrenotazioniNonSaldate(List<Prenotazione> nonSaldate) { }
 
     private VBox creaPannelloDestro() {
         VBox pannello = new VBox(15);

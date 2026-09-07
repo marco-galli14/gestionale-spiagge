@@ -4,17 +4,17 @@ import java.time.LocalDate;
 
 public class Pagamento {
 
-    private String codPagamento;
+    private int codPagamento; // Aggiornato a int
     private int importo;
     private LocalDate dataPagamento;
     private String metodoPagamento;
-    private Integer codNoleggio; // Aggiornato a Integer
+    private Integer codNoleggio;
     private Integer codPrenotazione;
 
     public Pagamento() {
     }
 
-    public Pagamento(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, Integer codNoleggio, Integer codPrenotazione) {
+    public Pagamento(int codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, Integer codNoleggio, Integer codPrenotazione) {
         this.codPagamento = codPagamento;
         this.importo = importo;
         this.dataPagamento = dataPagamento;
@@ -23,11 +23,11 @@ public class Pagamento {
         this.codPrenotazione = codPrenotazione;
     }
 
-    public String getCodPagamento() {
+    public int getCodPagamento() {
         return codPagamento;
     }
 
-    public void setCodPagamento(String codPagamento) {
+    public void setCodPagamento(int codPagamento) {
         this.codPagamento = codPagamento;
     }
 
@@ -55,11 +55,11 @@ public class Pagamento {
         this.metodoPagamento = metodoPagamento;
     }
 
-    public Integer getCodNoleggio() { // Restituisce Integer
+    public Integer getCodNoleggio() {
         return codNoleggio;
     }
 
-    public void setCodNoleggio(Integer codNoleggio) { // Accetta Integer
+    public void setCodNoleggio(Integer codNoleggio) {
         this.codNoleggio = codNoleggio;
     }
 
@@ -69,37 +69,5 @@ public class Pagamento {
 
     public void setCodPrenotazione(Integer codPrenotazione) {
         this.codPrenotazione = codPrenotazione;
-    }
-
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((codPagamento == null) ? 0 : codPagamento.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        Pagamento other = (Pagamento) obj;
-        if (codPagamento == null) {
-            if (other.codPagamento != null)
-                return false;
-        } else if (!codPagamento.equals(other.codPagamento))
-            return false;
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "Pagamento [codPagamento=" + codPagamento + ", importo=" + importo + ", dataPagamento=" + dataPagamento
-                + ", metodoPagamento=" + metodoPagamento + ", codNoleggio=" + codNoleggio + ", codPrenotazione="
-                + codPrenotazione + "]";
     }
 }

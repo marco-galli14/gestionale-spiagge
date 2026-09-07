@@ -4,128 +4,182 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-import org.checkerframework.checker.units.qual.t;
-
 import common.Pair;
+import common.StoricoNoleggio;
 import common.StoricoPrenotazione;
 import dao.AllestimentoDAO;
 import dao.ClienteDAO;
 import dao.DipendenteDAO;
 import dao.MappaDAO;
 import dao.NoleggioAttrezzaturaDAO;
-import dao.OmbrelloneDAO;
 import dao.PagamentoDAO;
 import dao.PrenotazioneCampoDAO;
 import dao.PrenotazioneDAO;
 import dao.PrenotazioneGiornalieraDAO;
 import dao.ZonaDAO;
+import javafx.stage.Stage;
+import model.Allestimento;
 import model.Cliente;
 import model.Dipendente;
+import model.Prenotazione;
 import model.PrenotazioneCampo;
 import model.PrenotazioneGiornaliera;
 import view.MainView;
 
-public final class MainController {
+public class MainController {
 
     private final MainView view;
-    
-    private final AllestimentoDAO allestimentoDao;
+    private final MappaDAO mappaDao;
     private final ClienteDAO clienteDao;
     private final PrenotazioneDAO prenotazioneDao;
-    private final PrenotazioneGiornalieraDAO prenotazioneGiornalieraDao;
-    private final MappaDAO mappaDao;
     private final NoleggioAttrezzaturaDAO noleggioAttrezzaturaDao;
+    private final PrenotazioneCampoDAO prenotazioneCampoDao;
     private final PagamentoDAO pagamentoDao;
     private final DipendenteDAO dipendenteDao;
     private final ZonaDAO zonaDao;
-    private final PrenotazioneCampoDAO prenotazioneCampoDao;
-    private final OmbrelloneDAO ombrelloneDao;
+    private final PrenotazioneGiornalieraDAO prenotazioneGiornalieraDao;
+    private final AllestimentoDAO allestimentoDao;
 
-    public MainController(MainView view) {
-        this.view = view;
-        
-        this.allestimentoDao = new AllestimentoDAO();
+    public MainController(Stage stage) {
+        this.view = new MainView(stage);
+        this.mappaDao = new MappaDAO();
         this.clienteDao = new ClienteDAO();
         this.prenotazioneDao = new PrenotazioneDAO();
-        this.prenotazioneGiornalieraDao = new PrenotazioneGiornalieraDAO();
-        this.mappaDao = new MappaDAO();
         this.noleggioAttrezzaturaDao = new NoleggioAttrezzaturaDAO();
+        this.prenotazioneCampoDao = new PrenotazioneCampoDAO();
         this.pagamentoDao = new PagamentoDAO();
         this.dipendenteDao = new DipendenteDAO();
         this.zonaDao = new ZonaDAO();
-        this.prenotazioneCampoDao = new PrenotazioneCampoDAO();
-        this.ombrelloneDao = new OmbrelloneDAO();
+        this.prenotazioneGiornalieraDao = new PrenotazioneGiornalieraDAO();
+        this.allestimentoDao = new AllestimentoDAO();
 
-        inizializzaEventiUI();
-        ricaricaDatiGlobali();
+        inizializzaListener();
     }
 
-    private void inizializzaEventiUI() {
-        
-        // Listener per recuperare la lista clienti e fornirla al popup di ricerca
-        view.setOnRichiediListaClienti(() -> {
-            return clienteDao.getTuttiIClienti();
-        });
+    public void avvia() {
+        // Prima costruiamo la grafica (creando la gridOmbrelloni in memoria)
+        view.mostraFinestra();
+        // ORA carichiamo i dati nella griglia
+        aggiornaDatiMappa(LocalDate.now(), LocalTime.now());
+    }
+
+    private void inizializzaListener() {
+        view.setOnCambioDataOraMappa(this::aggiornaDatiMappa);
 
         view.setOnCellaOmbrelloneClicked(numeroCella -> {
-            gestisciInterazioneCellaSpiaggia(numeroCella);
+            LocalDate data = view.getDataSelezionata();
+            List<MappaDAO.MappaOmbrelloneInfo> infoCelle = mappaDao.getMappaSpiaggia(data);
+            MappaDAO.MappaOmbrelloneInfo info = infoCelle.stream()
+                    .filter(c -> c.getNumero() == numeroCella)
+                    .findFirst()
+                    .orElse(null);
+
+            if (info != null && info.isOccupato()) {
+                view.mostraDettagliPrenotazioneCella(info.getCodZona(), info.getNomeZona(), info.getCodPrenotazione(), info.getClientePrenotato());
+            } else {
+                view.apriFormNuovaPrenotazionePerCella(numeroCella);
+            }
         });
 
-        view.setOnCambioDataOraMappa((dataRiferimento, oraRiferimento) -> {
-            aggiornaMappaSpiaggiaCompleta(dataRiferimento, oraRiferimento);
-        });
+        view.setOnRichiediListaClienti(clienteDao::getTuttiIClienti);
 
         view.setOnSalvaClienteAction((cf, nome, cognome, email, telefono, codHotel) -> {
-            boolean ok = clienteDao.insertCliente(cf, nome, cognome, email, telefono, codHotel);
-            view.mostraMessaggioEsito(ok, "Cliente registrato con successo!", "Errore durante la registrazione del cliente.");
+            boolean successo = clienteDao.insertCliente(cf, nome, cognome, email, telefono, codHotel);
+            if (!successo) {
+                view.mostraMessaggioEsito(false, "", "Errore durante il salvataggio del cliente.");
+            }
         });
 
-        view.setOnAssegnaGruppoCliente((cf, idGruppo) -> {
-            boolean ok = clienteDao.setGroup(cf, idGruppo);
-            view.mostraMessaggioEsito(ok, "Gruppo assegnato con successo!", "Errore nell'assegnazione del gruppo.");
-        });
-
-        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf, numeriOmbrelloni, qtaLettini, qtaSdraio, qtaSedie) -> {
-            int nuovoCodice = prenotazioneDao.addPrenotazione(dataInizio, dataFine, codDipendente, cf);
-            if (nuovoCodice > 0) {
-                for (int numOmbrellone : numeriOmbrelloni) {
-                    LocalDate corrente = dataInizio;
-                    while (!corrente.isAfter(dataFine)) {
-                        prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(nuovoCodice, numOmbrellone, corrente);
-                        if (qtaLettini > 0) {
-                            allestimentoDao.addAllestimento("LET", nuovoCodice, numOmbrellone, corrente, qtaLettini);
-                        }
-                        if (qtaSdraio > 0) {
-                            allestimentoDao.addAllestimento("SDR", nuovoCodice, numOmbrellone, corrente, qtaSdraio);
-                        }
-                        if (qtaSedie > 0) {
-                            allestimentoDao.addAllestimento("SED", nuovoCodice, numOmbrellone, corrente, qtaSedie);
-                        }
-                        corrente = corrente.plusDays(1);
+        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDip, cf, ombrelloni, lettini, sdraio, sedie) -> {
+            int codPren = prenotazioneDao.addPrenotazione(dataInizio, dataFine, codDip, cf);
+            if (codPren != -1) {
+                prenotazioneDao.updatePacchettoSconto(codPren);
+                
+                for (int numOmb : ombrelloni) {
+                    LocalDate currentDate = dataInizio;
+                    while (!currentDate.isAfter(dataFine)) {
+                        prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(codPren, numOmb, currentDate);
+                        
+                        if (lettini > 0) allestimentoDao.addAllestimento("LETTINO", codPren, numOmb, currentDate, lettini);
+                        if (sdraio > 0) allestimentoDao.addAllestimento("SDRAIO", codPren, numOmb, currentDate, sdraio);
+                        if (sedie > 0) allestimentoDao.addAllestimento("SEDIA", codPren, numOmb, currentDate, sedie);
+                        
+                        currentDate = currentDate.plusDays(1);
                     }
                 }
-
-                prenotazioneDao.updatePacchettoSconto(nuovoCodice);
-                prenotazioneDao.updateCostoTotale(nuovoCodice);
                 
-                aggiornaMappaSpiaggiaCompleta(view.getDataSelezionata(), LocalTime.now());
-                
-                view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
-                view.mostraMessaggioEsito(true, "Prenotazione creata con successo! Codice: " + nuovoCodice, "");
+                prenotazioneDao.updateCostoTotale(codPren);
+                view.mostraMessaggioEsito(true, "Prenotazione creata con successo!", "");
+                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
             } else {
-                view.mostraMessaggioEsito(false, "", "Errore nella creazione della prenotazione.");
+                view.mostraMessaggioEsito(false, "", "Impossibile creare la prenotazione.");
             }
         });
 
-        view.setOnEliminaPrenotazioneSpiaggiaAction(codPren -> {
-            boolean eliminata = prenotazioneDao.eliminaPrenotazione(codPren);
-            if (eliminata) {
-                aggiornaMappaSpiaggiaCompleta(view.getDataSelezionata(), LocalTime.now());
-                view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
-                view.mostraMessaggioEsito(true, "Prenotazione " + codPren + " eliminata con successo!", "");
+        view.setOnCreaNoleggioAction((data, oraInizio, durata, cf, codDip, codAttrezzatura) -> {
+            int codNol = noleggioAttrezzaturaDao.inserisciNoleggioAttrezzatura(data, oraInizio, durata, cf, codDip, codAttrezzatura);
+            if (codNol != -1) {
+                noleggioAttrezzaturaDao.aggiornaCostoTotaleNoleggio(codNol);
+                view.mostraMessaggioEsito(true, "Noleggio salvato con successo!", "");
+                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
             } else {
-                view.mostraMessaggioEsito(false, "", "Errore: Prenotazione non trovata.");
+                view.mostraMessaggioEsito(false, "", "Errore durante il salvataggio del noleggio.");
             }
+        });
+
+        view.setOnEliminaNoleggioAction(codNoleggio -> {
+            boolean ok = noleggioAttrezzaturaDao.eliminaNoleggioAttrezzatura(codNoleggio);
+            view.mostraMessaggioEsito(ok, "Noleggio eliminato con successo.", "Errore durante l'eliminazione del noleggio.");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+        });
+
+        view.setOnCreaPrenotazioneCampoAction((data, oraInizio, oraFine, codCampo, cf, codDip) -> {
+            boolean ok = prenotazioneCampoDao.inserisciPrenotazioneCampo(data, oraInizio, oraFine, codCampo, cf, codDip);
+            view.mostraMessaggioEsito(ok, "Prenotazione campo salvata con successo!", "Errore durante il salvataggio della prenotazione campo.");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+        });
+
+        view.setOnEliminaPrenotazioneCampoAction(codCampi -> {
+            boolean ok = prenotazioneCampoDao.eliminaPrenotazioneCampo(codCampi);
+            view.mostraMessaggioEsito(ok, "Prenotazione campo eliminata.", "Errore durante l'eliminazione.");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+        });
+
+        // REGISTRAZIONE PAGAMENTI
+        view.setOnRegistraPagamentoPrenotazione((importo, dataPag, metodo, codPren) -> {
+            boolean ok = pagamentoDao.insertPagamentoPrenotazione(importo, dataPag, metodo, codPren);
+            if (ok) {
+                prenotazioneDao.updateStatoPagamento(codPren);
+                view.mostraMessaggioEsito(true, "Pagamento registrato con successo!", "");
+                apriCentroContabilita();
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore durante la registrazione del pagamento.");
+            }
+        });
+
+        view.setOnRegistraPagamentoNoleggio((importo, dataPag, metodo, codNoleggio) -> {
+            boolean ok = pagamentoDao.insertPagamentoNoleggio(importo, dataPag, metodo, codNoleggio);
+            if (ok) {
+                view.mostraMessaggioEsito(true, "Pagamento noleggio registrato con successo!", "");
+                apriCentroContabilita();
+            } else {
+                view.mostraMessaggioEsito(false, "", "Errore durante la registrazione del pagamento.");
+            }
+        });
+
+        view.setOnRichiediTopDipendentePrenotazioni(() -> {
+            Pair<Dipendente, Integer> top = dipendenteDao.getDipendenteWithMostPrenotazioni();
+            view.mostraTopDipendentePrenotazioni(top);
+        });
+
+        view.setOnRichiediTopDipendenteNoleggi(() -> {
+            Pair<Dipendente, Integer> top = dipendenteDao.getDipendenteWithMostNoleggi();
+            view.mostraTopDipendenteNoleggi(top);
+        });
+
+        view.setOnRichiediOccupazioneZone((dataInizio, dataFine) -> {
+            List<ZonaDAO.ZonaOccupazioneInfo> info = zonaDao.getPercentualiOccupazioneZone(dataInizio, dataFine);
+            view.mostraStatisticheZone(info);
         });
 
         view.setOnRichiediStoricoPrenotazioni(() -> {
@@ -133,122 +187,59 @@ public final class MainController {
             view.mostraStoricoPrenotazioni(storico);
         });
 
-        view.setOnRichiediPrenotazioniGiornaliere((codPren) -> {
-            List<PrenotazioneGiornaliera> p = prenotazioneGiornalieraDao.getPrenotazioniGiornaliere(codPren);
-            view.mostraPrenotazioniGiornaliere(p);
+        view.setOnEliminaPrenotazioneSpiaggiaAction(codPren -> {
+            boolean ok = prenotazioneDao.eliminaPrenotazione(codPren);
+            view.mostraMessaggioEsito(ok, "Prenotazione eliminata con successo.", "Impossibile eliminare la prenotazione.");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
         });
 
-        view.setOnCreaNoleggioAction((data, oraInizio, durata, cf, codDipendente, codAttrezzatura) -> {
-            int codGenerato = noleggioAttrezzaturaDao.inserisciNoleggioAttrezzatura(data, oraInizio, durata, cf, codDipendente, codAttrezzatura);
+        view.setOnModificaAllestimentoGiornaliero((codPren, numOmb, data, lettini, sdraio, sedie) -> {
+            allestimentoDao.deleteAllestimento("LETTINO", codPren, numOmb, data);
+            allestimentoDao.deleteAllestimento("SDRAIO", codPren, numOmb, data);
+            allestimentoDao.deleteAllestimento("SEDIA", codPren, numOmb, data);
             
-            if (codGenerato > 0) {
-                noleggioAttrezzaturaDao.aggiornaCostoTotaleNoleggio(codGenerato);
-                view.aggiornaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
-                view.mostraMessaggioEsito(true, "Noleggio inserito! Codice assegnato: " + codGenerato, "");
-            } else {
-                view.mostraMessaggioEsito(false, "", "Errore: Controlla che i dati siano corretti.");
-            }
+            if (lettini > 0) allestimentoDao.addAllestimento("LETTINO", codPren, numOmb, data, lettini);
+            if (sdraio > 0) allestimentoDao.addAllestimento("SDRAIO", codPren, numOmb, data, sdraio);
+            if (sedie > 0) allestimentoDao.addAllestimento("SEDIA", codPren, numOmb, data, sedie);
+
+            prenotazioneDao.updateCostoTotale(codPren);
+            view.mostraMessaggioEsito(true, "Allestimento aggiornato con successo!", "");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
         });
 
-        view.setOnEliminaNoleggioAction(codNoleggio -> {
-            boolean eliminato = noleggioAttrezzaturaDao.eliminaNoleggioAttrezzatura(codNoleggio);
-            if (eliminato) {
-                view.aggiornaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
-                view.mostraMessaggioEsito(true, "Noleggio " + codNoleggio + " eliminato con successo!", "");
-            } else {
-                view.mostraMessaggioEsito(false, "", "Errore: Noleggio non trovato o impossibile da eliminare.");
-            }
+        view.setOnRichiediAllestimentiGiorno((codPren, numOmb, data) -> allestimentoDao.getAllestimenti(codPren, numOmb, data));
+
+        view.setOnRichiediPrenotazioniGiornaliere(codPrenotazione -> {
+            List<PrenotazioneGiornaliera> lista = prenotazioneGiornalieraDao.getPrenotazioniGiornaliere(codPrenotazione);
+            view.mostraPrenotazioniGiornaliere(lista);
         });
 
-        view.setOnVerificaCampiAction((data, ora) -> {
-            List<PrenotazioneCampo> campiOccupati = mappaDao.getOccupazioneCampi(data, ora);
-            view.mostraCampiOccupati(campiOccupati);
-        });
+        view.setOnVisualizzaContabilitaAction(this::apriCentroContabilita);
 
-        view.setOnCreaPrenotazioneCampoAction((dataPrenotazione, oraInizio, oraFine, codCampo, cf, codDip) -> {
-            boolean ok = prenotazioneCampoDao.inserisciPrenotazioneCampo(dataPrenotazione, oraInizio, oraFine, codCampo, cf, codDip);
-            view.mostraMessaggioEsito(ok, "Campo prenotato con successo!", "Errore nella prenotazione del campo.");
-            ricaricaDatiGlobali();
-        });
-
-        view.setOnEliminaPrenotazioneCampoAction(codPren -> {
-            boolean ok = prenotazioneCampoDao.eliminaPrenotazioneCampo(codPren);
-            view.mostraMessaggioEsito(ok, "Prenotazione campo eliminata con successo!", "Errore nell'eliminazione della prenotazione.");
-            ricaricaDatiGlobali();
-        });
-
-        view.setOnRegistraPagamentoPrenotazione((codPag, importo, data, metodo, codPren) -> {
-            boolean ok = pagamentoDao.insertPagamentoPrenotazione(codPag, importo, data, metodo, codPren);
-            if (ok) {
-                prenotazioneDao.updateStatoPagamento(codPren);
-                view.aggiornaListaPrenotazioniNonSaldate(prenotazioneDao.getPrenotazioniNonSaldate());
-            }
-        });
-
-        view.setOnGeneraReportGiornaliero(data -> {
+        view.setOnReportPerDataAction(data -> {
             Pair<Integer, Integer> report = pagamentoDao.getDailyReport(data);
             view.mostraReportIncassi(report.key(), report.value());
         });
-
-        // Dipendente con più prenotazioni
-        view.setOnRichiediTopDipendentePrenotazioni(() -> {
-            Pair<Dipendente, Integer> topPrenotazioni = dipendenteDao.getDipendenteWithMostPrenotazioni();
-            view.mostraTopDipendentePrenotazioni(topPrenotazioni);
-        });
-
-        // Dipendente con più noleggi
-        view.setOnRichiediTopDipendenteNoleggi(() -> {
-            Pair<Dipendente, Integer> topNoleggi = dipendenteDao.getDipendenteWithMostNoleggi();
-            view.mostraTopDipendenteNoleggi(topNoleggi);
-        });
-        
-        view.setOnRichiediOccupazioneZone((dataInizio, dataFine) -> {
-            List<ZonaDAO.ZonaOccupazioneInfo> percentuali = zonaDao.getPercentualiOccupazioneZone(dataInizio, dataFine);
-            view.mostraStatisticheZone(percentuali);
-        });
     }
 
-    private void aggiornaMappaSpiaggiaCompleta(LocalDate dataRiferimento, LocalTime oraRiferimento) {
-        List<MappaDAO.MappaOmbrelloneInfo> infoCelle = mappaDao.getMappaSpiaggia(dataRiferimento);
+    private void apriCentroContabilita() {
+        // Recuperiamo il Pair aggiornato
+        List<Pair<Prenotazione, Integer>> nonSaldatePren = prenotazioneDao.getPrenotazioniNonSaldate();
+        List<StoricoNoleggio> nonSaldateNol = noleggioAttrezzaturaDao.getNoleggiNonSaldatiEsterni();
+        Pair<Integer, Integer> reportOggi = pagamentoDao.getDailyReport(LocalDate.now());
+        
+        view.impostaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
+        view.mostraCentroContabilita(nonSaldatePren, nonSaldateNol, reportOggi.key(), reportOggi.value());
+    }
+
+    private void aggiornaDatiMappa(LocalDate data, LocalTime ora) {
+        List<MappaDAO.MappaOmbrelloneInfo> infoCelle = mappaDao.getMappaSpiaggia(data);
         view.aggiornaGrigliaSpiaggia(infoCelle);
 
-        List<PrenotazioneCampo> campiOccupati = mappaDao.getOccupazioneCampi(dataRiferimento, oraRiferimento);
+        List<PrenotazioneCampo> campiOccupati = mappaDao.getOccupazioneCampi(data, ora);
         view.mostraCampiOccupati(campiOccupati);
-    }
 
-    private void gestisciInterazioneCellaSpiaggia(int numeroCella) {
-        LocalDate dataSelezionata = view.getDataSelezionata();
-        if (dataSelezionata == null) {
-            dataSelezionata = LocalDate.now();
-        }
-        
-        List<MappaDAO.MappaOmbrelloneInfo> mappaData = mappaDao.getMappaSpiaggia(dataSelezionata);
-        
-        MappaDAO.MappaOmbrelloneInfo cellaSelezionata = mappaData.stream()
-                .filter(c -> c.getNumero() == numeroCella)
-                .findFirst()
-                .orElse(null);
-
-        if (cellaSelezionata != null && cellaSelezionata.isOccupato()) {
-            view.mostraDettagliPrenotazioneCella(
-                cellaSelezionata.getCodZona(), 
-                cellaSelezionata.getNomeZona(), 
-                cellaSelezionata.getCodPrenotazione(), 
-                cellaSelezionata.getClientePrenotato()
-            );
-        } else {
-            view.apriFormNuovaPrenotazionePerCella(numeroCella);
-        }
-    }
-
-    private void ricaricaDatiGlobali() {
-        LocalDate oggi = LocalDate.now();
-        LocalTime oraCorrente = LocalTime.now().withMinute(0);
-        
-        aggiornaMappaSpiaggiaCompleta(oggi, oraCorrente);
-
-        view.impostaTabellaNoleggi(noleggioAttrezzaturaDao.getStoricoNoleggi());
-        view.impostaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
-        view.aggiornaListaPrenotazioniNonSaldate(prenotazioneDao.getPrenotazioniNonSaldate());
+        List<StoricoNoleggio> storicoNoleggi = noleggioAttrezzaturaDao.getStoricoNoleggi();
+        view.impostaTabellaNoleggi(storicoNoleggi);
     }
 }

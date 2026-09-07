@@ -9,19 +9,18 @@ import common.Pair;
 
 public class PagamentoDAO {
 
-    public boolean insertPagamentoPrenotazione(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, int codPrenotazione) {
+    public boolean insertPagamentoPrenotazione(int importo, LocalDate dataPagamento, String metodoPagamento, int codPrenotazione) {
         
-        String query = "INSERT INTO PAGAMENTO (CodPagamento, DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
-                        "VALUES (?, ?, ?, ?, ?, NULL)";
+        String query = "INSERT INTO PAGAMENTO (DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
+                        "VALUES (?, ?, ?, ?, NULL)";
 
         try (Connection con = DatabaseConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(query)) {
     
-                    ps.setString(1, codPagamento);
-                    ps.setDate(2, java.sql.Date.valueOf(dataPagamento));
-                    ps.setInt(3, importo);
-                    ps.setString(4, metodoPagamento);
-                    ps.setInt(5, codPrenotazione);
+                    ps.setDate(1, java.sql.Date.valueOf(dataPagamento));
+                    ps.setInt(2, importo);
+                    ps.setString(3, metodoPagamento);
+                    ps.setInt(4, codPrenotazione);
     
                     int rowsAffected = ps.executeUpdate();
                     return rowsAffected > 0;
@@ -32,20 +31,18 @@ public class PagamentoDAO {
             }
     }
 
-    // Aggiornato codNoleggio da String a int
-    public boolean insertPagamentoNoleggio(String codPagamento, int importo, LocalDate dataPagamento, String metodoPagamento, int codNoleggio) {
+    public boolean insertPagamentoNoleggio(int importo, LocalDate dataPagamento, String metodoPagamento, int codNoleggio) {
         
-        String query = "INSERT INTO PAGAMENTO (CodPagamento, DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
-                        "VALUES (?, ?, ?, ?, NULL, ?)";
+        String query = "INSERT INTO PAGAMENTO (DataPagamento, Importo, MetodoPagamento, CodPrenotazione, CodNoleggio) " +
+                        "VALUES (?, ?, ?, NULL, ?)";
 
         try (Connection con = DatabaseConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(query)) {
     
-                    ps.setString(1, codPagamento);
-                    ps.setDate(2, java.sql.Date.valueOf(dataPagamento));
-                    ps.setInt(3, importo);
-                    ps.setString(4, metodoPagamento);
-                    ps.setInt(5, codNoleggio); // Utilizza setInt
+                    ps.setDate(1, java.sql.Date.valueOf(dataPagamento));
+                    ps.setInt(2, importo);
+                    ps.setString(3, metodoPagamento);
+                    ps.setInt(4, codNoleggio);
     
                     int rowsAffected = ps.executeUpdate();
                     return rowsAffected > 0;
@@ -57,14 +54,15 @@ public class PagamentoDAO {
     }
 
     public Pair<Integer, Integer> getDailyReport(LocalDate date) {
-
         String query = "SELECT " +
-                        "(SELECT SUM(p.PrezzoTotale) " +
-                        " FROM PRENOTAZIONE p " + 
-                        " WHERE p.DataInizio = ?) AS IncassiPrenotazioniSpiaggia," +
-                        " (SELECT SUM(na.CostoTotale) " +
-                        "  FROM NOLEGGIO_ATTREZZATURA na " +
-                        "  WHERE na.DataNoleggio = ?) AS IncassiNoleggiAttrezzature";
+                        "(SELECT SUM(p.Importo) " +
+                        " FROM pagamento p " +
+                        " WHERE p.DataPagamento = ? " +
+                        " AND p.CodPrenotazione IS NOT NULL) AS IncassiPrenotazioniSpiaggia, " +
+                        "(SELECT SUM(p.Importo) " +
+                        " FROM pagamento p " +
+                        " WHERE p.DataPagamento = ? " +
+                        " AND p.CodNoleggio IS NOT NULL) AS IncassiNoleggiAttrezzature";
 
         try (Connection con = DatabaseConnection.getConnection();
                 PreparedStatement ps = con.prepareStatement(query)) {

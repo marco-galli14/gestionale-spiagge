@@ -1,25 +1,21 @@
 import controller.MainController;
 import javafx.application.Application;
 import javafx.stage.Stage;
-import view.MainView;
 
 public class GestionaleSpiaggia extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         try {
-            // 1. Istanziamo la View passandole lo Stage principale
-            MainView view = new MainView(primaryStage);
+            // 1. Creiamo il Controller passandogli lo Stage principale.
+            // Il Controller si occuperà internamente di istanziare la MainView, 
+            // collegare gli eventi e preparare i DAO.
+            MainController controller = new MainController(primaryStage);
             
-            // 2. FONDAMENTALE: Costruiamo la grafica PRIMA del controller.
-            // In questo modo la 'gridOmbrelloni' e tutti gli altri componenti
-            // vengono creati fisicamente in memoria.
-            view.mostraFinestra();
-            
-            // 3. ORA creiamo il Controller.
-            // Il controller si aggancerà agli eventi e caricherà i dati
-            // in una griglia che ora esiste davvero.
-            MainController controller = new MainController(view);
+            // 2. Avviamo l'applicazione tramite il controller.
+            // Questo metodo richiama view.mostraFinestra() costruendo la grafica
+            // e subito dopo carica i dati nella griglia (celle degli ombrelloni, ecc.).
+            controller.avvia();
             
         } catch (Exception e) {
             e.printStackTrace();
