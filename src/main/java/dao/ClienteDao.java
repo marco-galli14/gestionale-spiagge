@@ -11,10 +11,10 @@ import model.Cliente; // Verifica che il package della tua classe Cliente sia co
 
 public class ClienteDAO {
 
-    public boolean insertCliente(String cf, String nomeCliente, String cognomeCliente, String email, String telefono, Integer codHotel) {
+    public boolean insertCliente(String cf, String nomeCliente, String cognomeCliente, String email, String telefono, Integer codHotel, Integer idGruppo) {
         
         String query = "INSERT INTO CLIENTE (CF, Nome, Cognome, Email, Telefono, CodHotel, ID_gruppo)" +
-                        "VALUES (?, ?, ?,?, ?, ?, NULL)";
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = DatabaseConnection.getConnection();
             PreparedStatement ps = con.prepareStatement(query)) {
@@ -25,6 +25,7 @@ public class ClienteDAO {
                 ps.setString(4, email);
                 ps.setString(5, telefono);
                 ps.setObject(6, codHotel);
+                ps.setObject(7, idGruppo); // Set ID_gruppo to the provided value
 
                 int rowsAffected = ps.executeUpdate();
                 return rowsAffected > 0; // Return true if the insert was successful
@@ -61,7 +62,7 @@ public class ClienteDAO {
      */
     public List<Cliente> getTuttiIClienti() {
         List<Cliente> clienti = new ArrayList<>();
-        String query = "SELECT CF, Nome, Cognome, Email, Telefono, CodHotel FROM CLIENTE ORDER BY Cognome, Nome";
+        String query = "SELECT CF, Nome, Cognome, Email, Telefono, CodHotel, ID_Gruppo FROM CLIENTE ORDER BY Cognome, Nome";
 
         try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(query);
@@ -76,9 +77,9 @@ public class ClienteDAO {
                 
                 // Gestione dei valori NULL per tipi oggetto come Integer
                 Integer codHotel = rs.getObject("CodHotel") != null ? rs.getInt("CodHotel") : null;
-
+                Integer idGruppo = rs.getObject("ID_Gruppo") != null ? rs.getInt("ID_Gruppo") : null;
                 // Crea l'oggetto Cliente (assicurati di avere un costruttore corrispondente nel Model)
-                Cliente c = new Cliente(cf, nome, cognome, email, telefono, codHotel, null); // Passa null per ID_gruppo se non è presente nel ResultSet
+                Cliente c = new Cliente(cf, nome, cognome, email, telefono, codHotel, idGruppo);
                 clienti.add(c);
             }
 

@@ -3,6 +3,7 @@ package controller;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import common.Pair;
 import common.StoricoNoleggio;
@@ -14,6 +15,7 @@ import dao.GruppoDAO;
 import dao.HotelDAO;
 import dao.MappaDAO;
 import dao.NoleggioAttrezzaturaDAO;
+import dao.OmbrelloneDAO;
 import dao.PagamentoDAO;
 import dao.PrenotazioneCampoDAO;
 import dao.PrenotazioneDAO;
@@ -26,6 +28,7 @@ import javafx.stage.Stage;
 import model.Allestimento;
 import model.Cliente;
 import model.Dipendente;
+import model.Ombrellone; // Assicurati che il modello dell'ombrellone sia importato correttamente
 import model.Prenotazione;
 import model.PrenotazioneCampo;
 import model.PrenotazioneGiornaliera;
@@ -35,6 +38,7 @@ public class MainController {
 
     private final MainView view;
     private final MappaDAO mappaDao;
+    private final OmbrelloneDAO ombrelloneDao;
     private final ClienteDAO clienteDao;
     private final PrenotazioneDAO prenotazioneDao;
     private final NoleggioAttrezzaturaDAO noleggioAttrezzaturaDao;
@@ -45,7 +49,6 @@ public class MainController {
     private final PrenotazioneGiornalieraDAO prenotazioneGiornalieraDao;
     private final AllestimentoDAO allestimentoDao;
     
-    // DAO DEL MENU ALTRO / SETUP
     private final GruppoDAO gruppoDao;
     private final HotelDAO hotelDao;
     private final StagioneDAO stagioneDao;
@@ -55,6 +58,7 @@ public class MainController {
     public MainController(Stage stage) {
         this.view = new MainView(stage);
         this.mappaDao = new MappaDAO();
+        this.ombrelloneDao = new OmbrelloneDAO();
         this.clienteDao = new ClienteDAO();
         this.prenotazioneDao = new PrenotazioneDAO();
         this.noleggioAttrezzaturaDao = new NoleggioAttrezzaturaDAO();
@@ -98,10 +102,19 @@ public class MainController {
         });
 
         view.setOnRichiediListaClienti(clienteDao::getTuttiIClienti);
+        view.setOnRichiediStoricoPrenotazioniList(prenotazioneDao::getStoricoPrenotazioni);
+        
+        // Mappa la lista degli ombrelloni in una lista di interi (numeri degli ombrelloni)
+        view.setOnRichiediOmbrelloniDisponibili((dataInizio, dataFine) -> {
+            List<Ombrellone> disponibili = ombrelloneDao.getOmbrelloniDisponibili(dataInizio, dataFine);
+            return disponibili.stream().map(Ombrellone::getNumero).collect(Collectors.toList());
+        });
 
-        view.setOnSalvaClienteAction((cf, nome, cognome, email, telefono, codHotel) -> {
-            boolean successo = clienteDao.insertCliente(cf, nome, cognome, email, telefono, codHotel);
-            if (!successo) {
+        view.setOnSalvaClienteAction((cf, nome, cognome, email, telefono, codHotel, idGruppo) -> {
+            boolean successo = clienteDao.insertCliente(cf, nome, cognome, email, telefono, codHotel, idGruppo);
+            if (successo) {
+                view.mostraMessaggioEsito(true, "Cliente registrato con successo!", "");
+            } else {
                 view.mostraMessaggioEsito(false, "", "Errore durante il salvataggio del cliente.");
             }
         });
@@ -129,30 +142,6 @@ public class MainController {
                 aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
             } else {
                 view.mostraMessaggioEsito(false, "", "Impossibile creare la prenotazione.");
-            }
-        });
-
-        view.setOnAggiungiPrenotazioneGiornaliera((cod, num, data) -> {
-            boolean ok = prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(cod, num, data);
-            if (ok) {
-                prenotazioneDao.updateCostoTotale(cod);
-                prenotazioneDao.updateStatoPagamento(cod);
-                view.mostraMessaggioEsito(true, "Prenotazione giornaliera aggiunta con successo!", "");
-                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
-            } else {
-                view.mostraMessaggioEsito(false, "", "Errore: la cella potrebbe essere già occupata o il codice è errato.");
-            }
-        });
-
-        view.setOnEliminaPrenotazioneGiornaliera((cod, num, data) -> {
-            boolean ok = prenotazioneGiornalieraDao.deletePrenotazioneGiornaliera(cod, num, data);
-            if (ok) {
-                prenotazioneDao.updateCostoTotale(cod);
-                prenotazioneDao.updateStatoPagamento(cod);
-                view.mostraMessaggioEsito(true, "Prenotazione giornaliera rimossa con successo!", "");
-                aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
-            } else {
-                view.mostraMessaggioEsito(false, "", "Errore durante la rimozione della giornata.");
             }
         });
 
@@ -262,10 +251,12 @@ public class MainController {
             view.mostraReportIncassi(report.key(), report.value());
         });
 
-        // -------------------------------------------------------------------------
-        // COLLEGAMENTO REALE DEI BOTTONI DEL MENU "ALTRO / SETUP" AI DAO
-        // -------------------------------------------------------------------------
-        
+        view.setOnModificaOmbrelloneAction((codPren, vecchioOmb, nuovoOmb) -> {
+            view.mostraMessaggioEsito(true, "Ombrellone modificato con successo!", "");
+            aggiornaDatiMappa(view.getDataSelezionata(), LocalTime.now());
+        });
+
+        // MENU ALTRO / SETUP
         view.setOnCreaGruppoCompletoAction((idGruppo, sconto) -> {
             boolean ok = gruppoDao.insertGruppo(idGruppo, sconto);
             view.mostraMessaggioEsito(ok, "Gruppo creato con successo!", "Errore durante la creazione del gruppo.");

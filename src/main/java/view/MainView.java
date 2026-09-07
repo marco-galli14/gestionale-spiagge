@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -69,6 +70,7 @@ public class MainView {
     private Runnable onRichiediTopDipendentePrenotazioni;
     private Runnable onRichiediTopDipendenteNoleggi;
     private BiConsumer<LocalDate, LocalDate> onRichiediOccupazioneZone;
+    private Supplier<List<StoricoPrenotazione>> onRichiediStoricoPrenotazioniList;
     private Runnable onRichiediStoricoPrenotazioni;
     private Consumer<Integer> onEliminaPrenotazioneSpiaggiaAction;
     private Supplier<List<Cliente>> onRichiediListaClienti;
@@ -77,11 +79,9 @@ public class MainView {
     private Consumer<Integer> onRichiediPrenotazioniGiornaliere;
     private Runnable onVisualizzaContabilitaAction;
     private Consumer<LocalDate> onReportPerDataAction;
+    private OnModificaOmbrelloneListener onModificaOmbrelloneAction;
+    private BiFunction<LocalDate, LocalDate, List<Integer>> onRichiediOmbrelloniDisponibili;
     
-    // Gestione Giorni
-    private OnGestioneGiornalieraListener onAggiungiPrenotazioneGiornaliera;
-    private OnGestioneGiornalieraListener onEliminaPrenotazioneGiornaliera;
-
     // Azioni Menu Altro
     private BiConsumer<Integer, Integer> onCreaGruppoCompletoAction; 
     private BiConsumer<String, Integer> onAssegnaGruppoClienteAction;
@@ -91,8 +91,7 @@ public class MainView {
     private OnSalvaTariffaZonaListener onSalvaTariffaZonaAction;
     private OnSalvaTariffaNoleggioListener onSalvaTariffaNoleggioAction;
 
-    @FunctionalInterface public interface OnGestioneGiornalieraListener { void onAzione(int codPrenotazione, int numOmbrellone, LocalDate data); }
-    @FunctionalInterface public interface OnSalvaClienteListener { void onSalva(String cf, String nome, String cognome, String email, String telefono, Integer codHotel); }
+    @FunctionalInterface public interface OnSalvaClienteListener { void onSalva(String cf, String nome, String cognome, String email, String telefono, Integer codHotel, Integer idGruppo); }
     @FunctionalInterface public interface OnCreaPrenotazioneListener { void onCrea(LocalDate dataInizio, LocalDate dataFine, int codDipendente, String cf, List<Integer> numeriOmbrelloni, int qtaLettini, int qtaSdraio, int qtaSedie); }
     @FunctionalInterface public interface OnCreaNoleggioListener { void onCrea(LocalDate data, LocalTime oraInizio, int durata, String cf, String codDipendente, String codAttrezzatura); }
     @FunctionalInterface public interface OnCreaPrenotazioneCampoListener { void onCrea(LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, String codDip); }
@@ -105,6 +104,7 @@ public class MainView {
     @FunctionalInterface public interface OnSalvaStagioneListener { void onSalva(String codStagione, LocalDate inizio, LocalDate fine); }
     @FunctionalInterface public interface OnSalvaTariffaZonaListener { void onSalva(String codStagione, int codZona, int tariffa); }
     @FunctionalInterface public interface OnSalvaTariffaNoleggioListener { void onSalva(String codStagione, String codAttrezzatura, int tariffaOraria); }
+    @FunctionalInterface public interface OnModificaOmbrelloneListener { void onModifica(int codPren, int vecchioOmb, int nuovoOmb); }
 
     public MainView(Stage stage) { this.stage = stage; }
 
@@ -125,14 +125,15 @@ public class MainView {
     public void setOnRichiediTopDipendenteNoleggi(Runnable listener) { this.onRichiediTopDipendenteNoleggi = listener; }
     public void setOnRichiediOccupazioneZone(BiConsumer<LocalDate, LocalDate> listener) { this.onRichiediOccupazioneZone = listener; }
     public void setOnRichiediStoricoPrenotazioni(Runnable listener) { this.onRichiediStoricoPrenotazioni = listener; }
+    public void setOnRichiediStoricoPrenotazioniList(Supplier<List<StoricoPrenotazione>> listener) { this.onRichiediStoricoPrenotazioniList = listener; }
     public void setOnEliminaPrenotazioneSpiaggiaAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneSpiaggiaAction = listener; }
     public void setOnModificaAllestimentoGiornaliero(OnModificaAllestimentoGiornalieroListener listener) { this.onModificaAllestimentoGiornaliero = listener; }
     public void setOnRichiediAllestimentiGiorno(OnRichiediAllestimentiGiornoListener listener) { this.onRichiediAllestimentiGiorno = listener; }
     public void setOnRichiediPrenotazioniGiornaliere(Consumer<Integer> listener) { this.onRichiediPrenotazioniGiornaliere = listener; }
     public void setOnVisualizzaContabilitaAction(Runnable listener) { this.onVisualizzaContabilitaAction = listener; }
     public void setOnReportPerDataAction(Consumer<LocalDate> listener) { this.onReportPerDataAction = listener; }
-    public void setOnAggiungiPrenotazioneGiornaliera(OnGestioneGiornalieraListener listener) { this.onAggiungiPrenotazioneGiornaliera = listener; }
-    public void setOnEliminaPrenotazioneGiornaliera(OnGestioneGiornalieraListener listener) { this.onEliminaPrenotazioneGiornaliera = listener; }
+    public void setOnModificaOmbrelloneAction(OnModificaOmbrelloneListener listener) { this.onModificaOmbrelloneAction = listener; }
+    public void setOnRichiediOmbrelloniDisponibili(BiFunction<LocalDate, LocalDate, List<Integer>> listener) { this.onRichiediOmbrelloniDisponibili = listener; }
     
     // Setter Altro
     public void setOnCreaGruppoCompletoAction(BiConsumer<Integer, Integer> listener) { this.onCreaGruppoCompletoAction = listener; }
@@ -261,10 +262,9 @@ public class MainView {
 
         Button btnInserisciPren = creaPulsanteSezione("Inserisci Prenotazione", 40);
         Button btnEliminaPren = creaPulsanteSezione("Elimina Prenotazione", 40);
+        Button btnModificaOmb = creaPulsanteSezione("Modifica Ombrellone", 40);
         Button btnStoricoPren = creaPulsanteSezione("Storico Prenotazioni", 40);
         Button btnPrenGior = creaPulsanteSezione("Visualizza Prenotazioni Giornaliere", 40);
-        Button btnAggiungiGiorno = creaPulsanteSezione("Aggiungi Giorno (Pren. Giornaliera)", 40);
-        Button btnRimuoviGiorno = creaPulsanteSezione("Rimuovi Giorno (Pren. Giornaliera)", 40);
         Button btnModificaAllestimentoGiorno = creaPulsanteSezione("Modifica Allestimento Giornaliero", 40);
         Button btnIndietro = new Button("⬅ Torna alla Mappa");
         btnIndietro.setPrefSize(180, 38);
@@ -272,6 +272,8 @@ public class MainView {
 
         btnInserisciPren.setOnAction(e -> mostraFormInserisciPrenotazione(null));
         btnEliminaPren.setOnAction(e -> mostraFormEliminaPrenotazione());
+        btnModificaOmb.setOnAction(e -> mostraFormModificaOmbrellone());
+
         btnStoricoPren.setOnAction(e -> { if (onRichiediStoricoPrenotazioni != null) onRichiediStoricoPrenotazioni.run(); });
         btnPrenGior.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
@@ -283,12 +285,10 @@ public class MainView {
                 catch (NumberFormatException ex) { mostraMessaggioEsito(false,"","Inserisci un numero intero valido."); }
             });
         });
-        btnAggiungiGiorno.setOnAction(e -> mostraFormGestioneGiorno(true));
-        btnRimuoviGiorno.setOnAction(e -> mostraFormGestioneGiorno(false));
         btnModificaAllestimentoGiorno.setOnAction(e -> mostraFormModificaAllestimentoGiornaliero());
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
 
-        VBox contentBox = new VBox(12, titolo, btnInserisciPren, btnEliminaPren, btnStoricoPren, btnPrenGior, btnAggiungiGiorno, btnRimuoviGiorno, btnModificaAllestimentoGiorno, btnIndietro);
+        VBox contentBox = new VBox(10, titolo, btnInserisciPren, btnEliminaPren, btnModificaOmb, btnStoricoPren, btnPrenGior, btnModificaAllestimentoGiorno, btnIndietro);
         contentBox.setAlignment(Pos.CENTER);
         ScrollPane scroll = new ScrollPane(contentBox);
         scroll.setFitToWidth(true);
@@ -306,7 +306,7 @@ public class MainView {
         Label titolo = new Label("MENU CONFIGURAZIONE E AMMINISTRAZIONE");
         titolo.setFont(new Font("System Bold", 22));
 
-        Button btnCliente = creaPulsanteSezione("Registra Nuovo Cliente", 40); // NUOVO BOTTONE
+        Button btnCliente = creaPulsanteSezione("Registra Nuovo Cliente", 40);
         Button btnGruppo = creaPulsanteSezione("Crea Nuovo Gruppo", 40);
         Button btnAssegnaGruppo = creaPulsanteSezione("Assegna Gruppo a Cliente", 40);
         Button btnHotel = creaPulsanteSezione("Aggiungi Hotel Convenzionato", 40);
@@ -318,8 +318,7 @@ public class MainView {
         btnIndietro.setPrefSize(180, 38);
         btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
 
-        // Azione del nuovo bottone: riusa il form rapido passandogli un TextField fittizio o gestendolo direttamente
-        btnCliente.setOnAction(e -> mostraFormRegistrazioneClienteGenerico());
+        btnCliente.setOnAction(e -> mostraFormNuovoClienteRapido(null));
         btnGruppo.setOnAction(e -> mostraFormCreaGruppo());
         btnAssegnaGruppo.setOnAction(e -> mostraFormAssegnaGruppo());
         btnHotel.setOnAction(e -> mostraFormNuovoHotel());
@@ -336,39 +335,6 @@ public class MainView {
         scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
         this.scenaMenuAltro = new Scene(scroll, stage.getScene().getWidth(), stage.getScene().getHeight());
         stage.setScene(this.scenaMenuAltro);
-    }
-
-    private void mostraFormGestioneGiorno(boolean isAdd) {
-        GridPane grid = new GridPane();
-        grid.setVgap(12); grid.setHgap(15);
-        grid.setAlignment(Pos.CENTER);
-        TextField txtCod = new TextField();
-        TextField txtNum = new TextField();
-        DatePicker dpData = new DatePicker(LocalDate.now());
-
-        grid.add(new Label("Cod. Prenotazione:"), 0, 0); grid.add(txtCod, 1, 0);
-        grid.add(new Label("Num. Ombrellone:"), 0, 1);   grid.add(txtNum, 1, 1);
-        grid.add(new Label("Data Riferimento:"), 0, 2);  grid.add(dpData, 1, 2);
-
-        Button btnSalva = new Button(isAdd ? "Aggiungi Giorno" : "Rimuovi Giorno");
-        btnSalva.setStyle(isAdd ? "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;" : "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
-        btnSalva.setOnAction(e -> {
-            try {
-                int cod = Integer.parseInt(txtCod.getText().trim());
-                int num = Integer.parseInt(txtNum.getText().trim());
-                LocalDate d = dpData.getValue();
-                if (isAdd && onAggiungiPrenotazioneGiornaliera != null) onAggiungiPrenotazioneGiornaliera.onAzione(cod, num, d);
-                else if (!isAdd && onEliminaPrenotazioneGiornaliera != null) onEliminaPrenotazioneGiornaliera.onAzione(cod, num, d);
-                stage.setScene(scenaPrincipale);
-            } catch (Exception ex) { mostraMessaggioEsito(false, "", "Verifica i parametri."); }
-        });
-        Button btnIndietro = new Button("Indietro");
-        btnIndietro.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold;");
-        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
-
-        VBox layout = new VBox(20, new Label(isAdd ? "AGGIUNGI PRENOTAZIONE GIORNALIERA" : "RIMUOVI PRENOTAZIONE GIORNALIERA"), grid, new HBox(15, btnSalva, btnIndietro) {{ setAlignment(Pos.CENTER); }});
-        layout.setAlignment(Pos.CENTER); layout.setPadding(new Insets(25));
-        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
     private void cambiaScenaAttrezzature() {
@@ -442,9 +408,17 @@ public class MainView {
         btnNuovoCliente.setOnAction(e -> mostraFormNuovoClienteRapido(txtCf));
         HBox boxCf = new HBox(8, txtCf, btnCercaCf, btnNuovoCliente); boxCf.setAlignment(Pos.CENTER_LEFT);
 
-        TextField txtDip = new TextField(); TextField txtOmbrelloni = new TextField();
+        TextField txtDip = new TextField(); 
+        
+        TextField txtOmbrelloni = new TextField();
+        txtOmbrelloni.setPromptText("Seleziona dalla mappa");
+        txtOmbrelloni.setEditable(false);
         if (numeroOmbrellonePreselezionato != null) txtOmbrelloni.setText(String.valueOf(numeroOmbrellonePreselezionato));
-        else txtOmbrelloni.setPromptText("Es. 1, 5, 12");
+
+        Button btnScegliOmb = new Button("🏖️ Scegli Ombrelloni");
+        btnScegliOmb.setStyle("-fx-background-color: #34495e; -fx-text-fill: white; -fx-font-weight: bold;");
+        btnScegliOmb.setOnAction(e -> mostraMiniMappaDisponibili(dpInizio.getValue(), dpFine.getValue(), txtOmbrelloni));
+        HBox boxOmb = new HBox(8, txtOmbrelloni, btnScegliOmb); boxOmb.setAlignment(Pos.CENTER_LEFT);
 
         Spinner<Integer> spnLettini = new Spinner<>(0, 10, 0); Spinner<Integer> spnSdraio = new Spinner<>(0, 10, 0); Spinner<Integer> spnSedie = new Spinner<>(0, 10, 0);
         spnLettini.setPrefWidth(70); spnSdraio.setPrefWidth(70); spnSedie.setPrefWidth(70);
@@ -454,7 +428,7 @@ public class MainView {
         grid.add(new Label("Data Fine:"), 0, 1); grid.add(dpFine, 1, 1);
         grid.add(new Label("CF Cliente:"), 0, 2); grid.add(boxCf, 1, 2);
         grid.add(new Label("Cod. Dipendente:"), 0, 3); grid.add(txtDip, 1, 3);
-        grid.add(new Label("Num. Ombrelloni (,):"), 0, 4); grid.add(txtOmbrelloni, 1, 4);
+        grid.add(new Label("Ombrelloni:"), 0, 4); grid.add(boxOmb, 1, 4);
         grid.add(new Label("Allestimento Extra:"), 0, 5); grid.add(boxAllestimenti, 1, 5);
 
         Button btnSalva = new Button("Salva Prenotazione"); btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
@@ -475,33 +449,109 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
+    private void mostraMiniMappaDisponibili(LocalDate dataInizio, LocalDate dataFine, TextField targetField) {
+        if (dataInizio == null || dataFine == null || dataInizio.isAfter(dataFine)) {
+            mostraMessaggioEsito(false, "", "Seleziona prima un intervallo di date valido.");
+            return;
+        }
+
+        List<Integer> ombrelloniLiberi = new ArrayList<>();
+        if (onRichiediOmbrelloniDisponibili != null) {
+            ombrelloniLiberi = onRichiediOmbrelloniDisponibili.apply(dataInizio, dataFine);
+        }
+
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Seleziona Ombrelloni Disponibili");
+
+        GridPane gridMiniMappa = new GridPane();
+        gridMiniMappa.setAlignment(Pos.CENTER);
+        gridMiniMappa.setHgap(5);
+        gridMiniMappa.setVgap(5);
+        gridMiniMappa.setPadding(new Insets(15));
+
+        List<Integer> ombrelloniSelezionati = new ArrayList<>();
+        
+        int r = 0, c = 0;
+        for (int i = 1; i <= 60; i++) {
+            Button btn = new Button(String.valueOf(i));
+            btn.setPrefSize(45, 35);
+            
+            final int numOmb = i;
+            boolean isLibero = ombrelloniLiberi.contains(numOmb);
+
+            if (isLibero) {
+                btn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
+                btn.setOnAction(e -> {
+                    if (ombrelloniSelezionati.contains(numOmb)) {
+                        ombrelloniSelezionati.remove(Integer.valueOf(numOmb));
+                        btn.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
+                    } else {
+                        ombrelloniSelezionati.add(numOmb);
+                        btn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold;");
+                    }
+                });
+            } else {
+                btn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+                btn.setDisable(true);
+            }
+
+            gridMiniMappa.add(btn, c, r);
+            c++;
+            if (c >= 10) { c = 0; r++; }
+        }
+
+        Button btnConferma = new Button("Conferma Selezione");
+        btnConferma.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
+        btnConferma.setOnAction(e -> {
+            targetField.setText(ombrelloniSelezionati.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+            popup.close();
+        });
+
+        VBox layout = new VBox(15, new Label("Verdi = Disponibili | Rossi = Occupati"), new ScrollPane(gridMiniMappa), btnConferma);
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(15));
+
+        popup.setScene(new Scene(layout, 500, 450));
+        popup.showAndWait();
+    }
+
     public void mostraFormNuovoClienteRapido(TextField targetField) {
         Stage popup = new Stage(); popup.initModality(Modality.APPLICATION_MODAL); popup.setTitle("Registra Nuovo Cliente");
         GridPane grid = new GridPane(); grid.setVgap(10); grid.setHgap(10); grid.setPadding(new Insets(20));
 
-        TextField txtCf = new TextField(), txtNome = new TextField(), txtCognome = new TextField(), txtEmail = new TextField(), txtTelefono = new TextField(), txtCodHotel = new TextField();
+        TextField txtCf = new TextField(), txtNome = new TextField(), txtCognome = new TextField(), txtEmail = new TextField(), txtTelefono = new TextField(), txtCodHotel = new TextField(), txtIdGruppo = new TextField();
         grid.add(new Label("Codice Fiscale:"), 0, 0); grid.add(txtCf, 1, 0);
         grid.add(new Label("Nome:"), 0, 1); grid.add(txtNome, 1, 1);
         grid.add(new Label("Cognome:"), 0, 2); grid.add(txtCognome, 1, 2);
         grid.add(new Label("Email:"), 0, 3); grid.add(txtEmail, 1, 3);
         grid.add(new Label("Telefono:"), 0, 4); grid.add(txtTelefono, 1, 4);
-        grid.add(new Label("Cod. Hotel:"), 0, 5); grid.add(txtCodHotel, 1, 5);
+        grid.add(new Label("Cod. Hotel (opzionale):"), 0, 5); grid.add(txtCodHotel, 1, 5);
+        grid.add(new Label("ID Gruppo (opzionale):"), 0, 6); grid.add(txtIdGruppo, 1, 6);
 
-        Button btnSalva = new Button("Salva e Seleziona"); btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
+        Button btnSalva = new Button("Salva Cliente"); btnSalva.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
         btnSalva.setOnAction(e -> {
             if (txtCf.getText().trim().isEmpty() || txtNome.getText().trim().isEmpty() || txtCognome.getText().trim().isEmpty()) { mostraMessaggioEsito(false, "", "CF, Nome e Cognome sono obbligatori."); return; }
-            Integer codHotel = null;
-            if (!txtCodHotel.getText().trim().isEmpty()) {
-                try { codHotel = Integer.parseInt(txtCodHotel.getText().trim()); } catch (NumberFormatException ex) { mostraMessaggioEsito(false, "", "Il codice hotel deve essere un numero."); return; }
-            }
-            if (onSalvaClienteAction != null) {
-                onSalvaClienteAction.onSalva(txtCf.getText().trim(), txtNome.getText().trim(), txtCognome.getText().trim(), txtEmail.getText().trim(), txtTelefono.getText().trim(), codHotel);
-                targetField.setText(txtCf.getText().trim()); popup.close();
+            try {
+                Integer codHotel = txtCodHotel.getText().trim().isEmpty() ? null : Integer.parseInt(txtCodHotel.getText().trim());
+                Integer idGruppo = txtIdGruppo.getText().trim().isEmpty() ? null : Integer.parseInt(txtIdGruppo.getText().trim());
+                
+                if (onSalvaClienteAction != null) {
+                    onSalvaClienteAction.onSalva(txtCf.getText().trim(), txtNome.getText().trim(), txtCognome.getText().trim(), txtEmail.getText().trim(), txtTelefono.getText().trim(), codHotel, idGruppo);
+                    if (targetField != null) {
+                        targetField.setText(txtCf.getText().trim());
+                    } else {
+                        mostraMessaggioEsito(true, "Cliente registrato con successo!", "");
+                    }
+                    popup.close();
+                }
+            } catch (NumberFormatException ex) {
+                mostraMessaggioEsito(false, "", "Codice Hotel e ID Gruppo devono essere numeri interi.");
             }
         });
         Button btnAnnulla = new Button("Annulla"); btnAnnulla.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"); btnAnnulla.setOnAction(e -> popup.close());
-        VBox layout = new VBox(15, new Label("REGISTRAZIONE RAPIDA CLIENTE"), grid, new HBox(10, btnSalva, btnAnnulla) {{ setAlignment(Pos.CENTER_RIGHT); }}); layout.setPadding(new Insets(15));
-        popup.setScene(new Scene(layout, 380, 360)); popup.showAndWait();
+        VBox layout = new VBox(15, new Label("REGISTRAZIONE NUOVO CLIENTE"), grid, new HBox(10, btnSalva, btnAnnulla) {{ setAlignment(Pos.CENTER_RIGHT); }}); layout.setPadding(new Insets(15));
+        popup.setScene(new Scene(layout, 380, 400)); popup.showAndWait();
     }
 
     public void mostraSelezionatoreCliente(TextField targetField) {
@@ -536,8 +586,104 @@ public class MainView {
         popup.setScene(new Scene(layout, 480, 400)); popup.showAndWait();
     }
 
+    public void mostraSelezionatorePrenotazione(TextField targetField) {
+        if (onRichiediStoricoPrenotazioniList == null) { 
+            mostraMessaggioEsito(false, "", "Impossibile recuperare lo storico delle prenotazioni."); 
+            return; 
+        }
+        
+        Stage popup = new Stage(); 
+        popup.initModality(Modality.APPLICATION_MODAL); 
+        popup.setTitle("Seleziona Prenotazione (dallo Storico)");
+        
+        TableView<StoricoPrenotazione> tabella = new TableView<>();
+        TableColumn<StoricoPrenotazione, Integer> colCod = new TableColumn<>("Codice"); 
+        colCod.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().codPrenotazione()));
+        
+        TableColumn<StoricoPrenotazione, String> colCf = new TableColumn<>("CF Cliente"); 
+        colCf.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().cf()));
+        
+        TableColumn<StoricoPrenotazione, String> colNome = new TableColumn<>("Nome e Cognome"); 
+        colNome.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().nome() + " " + data.getValue().cognome()));
+        
+        TableColumn<StoricoPrenotazione, LocalDate> colInizio = new TableColumn<>("Inizio"); 
+        colInizio.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().dataInizio()));
+        
+        TableColumn<StoricoPrenotazione, LocalDate> colFine = new TableColumn<>("Fine"); 
+        colFine.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().dataFine()));
+
+        TableColumn<StoricoPrenotazione, Integer> colPrezzo = new TableColumn<>("Prezzo (€)"); 
+        colPrezzo.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().prezzoTotale()));
+
+        tabella.getColumns().addAll(colCod, colCf, colNome, colInizio, colFine, colPrezzo); 
+        tabella.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        List<StoricoPrenotazione> storico = onRichiediStoricoPrenotazioniList.get();
+        tabella.setItems(FXCollections.observableArrayList(storico != null ? storico : new ArrayList<>()));
+
+        tabella.setRowFactory(tv -> {
+            TableRow<StoricoPrenotazione> row = new TableRow<>();
+            row.setOnMouseClicked(event -> { 
+                if (event.getClickCount() == 2 && (!row.isEmpty())) { 
+                    targetField.setText(String.valueOf(row.getItem().codPrenotazione())); 
+                    popup.close(); 
+                } 
+            });
+            return row;
+        });
+
+        VBox layout = new VBox(10, new Label("Fai doppio clic sulla prenotazione per selezionarla:"), tabella); 
+        layout.setPadding(new Insets(15));
+        popup.setScene(new Scene(layout, 600, 400)); 
+        popup.showAndWait();
+    }
+
+    private void mostraFormModificaOmbrellone() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Modifica Ombrellone in Prenotazione");
+        GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
+
+        TextField txtCodPren = new TextField();
+        txtCodPren.setPromptText("Codice Prenotazione");
+        Button btnCercaPren = new Button("🔍 Cerca");
+        btnCercaPren.setOnAction(e -> mostraSelezionatorePrenotazione(txtCodPren));
+        HBox boxPren = new HBox(8, txtCodPren, btnCercaPren);
+
+        TextField txtVecchioOmb = new TextField();
+        txtVecchioOmb.setPromptText("Ombrellone Attuale");
+        TextField txtNuovoOmb = new TextField();
+        txtNuovoOmb.setPromptText("Nuovo Ombrellone");
+
+        grid.add(new Label("Cod. Prenotazione:"), 0, 0); grid.add(boxPren, 1, 0);
+        grid.add(new Label("Ombrellone Attuale:"), 0, 1); grid.add(txtVecchioOmb, 1, 1);
+        grid.add(new Label("Nuovo Ombrellone:"), 0, 2); grid.add(txtNuovoOmb, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(res -> {
+            if (res == ButtonType.OK) {
+                try {
+                    int codPren = Integer.parseInt(txtCodPren.getText().trim());
+                    int vecchioOmb = Integer.parseInt(txtVecchioOmb.getText().trim());
+                    int nuovoOmb = Integer.parseInt(txtNuovoOmb.getText().trim());
+                    
+                    if (onModificaOmbrelloneAction != null) {
+                        onModificaOmbrelloneAction.onModifica(codPren, vecchioOmb, nuovoOmb);
+                    }
+                } catch (Exception ex) {
+                    mostraMessaggioEsito(false, "", "Inserisci valori numerici validi.");
+                }
+            }
+        });
+    }
+
     private void mostraFormEliminaPrenotazione() {
-        VBox layout = new VBox(15); layout.setAlignment(Pos.CENTER); TextField txtCod = new TextField(); txtCod.setMaxWidth(200);
+        VBox layout = new VBox(15); layout.setAlignment(Pos.CENTER); 
+        TextField txtCod = new TextField(); txtCod.setMaxWidth(200);
+        Button btnCerca = new Button("🔍 Cerca Prenotazione");
+        btnCerca.setOnAction(e -> mostraSelezionatorePrenotazione(txtCod));
+        
         Button btnElimina = new Button("Elimina Definitivamente"); btnElimina.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
         btnElimina.setOnAction(e -> {
             try {
@@ -545,7 +691,7 @@ public class MainView {
             } catch (NumberFormatException ex) { mostraMessaggioEsito(false, "", "Il codice deve essere numerico."); }
         });
         Button btnIndietro = new Button("Annulla"); btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
-        layout.getChildren().addAll(new Label("Codice Numerico Prenotazione da eliminare:"), txtCod, new HBox(10, btnElimina, btnIndietro) {{ setAlignment(Pos.CENTER); }});
+        layout.getChildren().addAll(new Label("Codice Numerico Prenotazione da eliminare:"), txtCod, btnCerca, new HBox(10, btnElimina, btnIndietro) {{ setAlignment(Pos.CENTER); }});
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
@@ -565,6 +711,10 @@ public class MainView {
     private void mostraFormModificaAllestimentoGiornaliero() {
         GridPane grid = new GridPane(); grid.setVgap(12); grid.setHgap(15); grid.setAlignment(Pos.CENTER);
         TextField txtCodPren = new TextField(), txtNumOmb = new TextField(); DatePicker dpData = new DatePicker(LocalDate.now());
+        Button btnCercaPren = new Button("🔍 Cerca");
+        btnCercaPren.setOnAction(e -> mostraSelezionatorePrenotazione(txtCodPren));
+        HBox boxPren = new HBox(8, txtCodPren, btnCercaPren);
+
         Spinner<Integer> spnLettini = new Spinner<>(0, 10, 0); Spinner<Integer> spnSdraio = new Spinner<>(0, 10, 0); Spinner<Integer> spnSedie = new Spinner<>(0, 10, 0);
         spnLettini.setPrefWidth(70); spnSdraio.setPrefWidth(70); spnSedie.setPrefWidth(70);
 
@@ -585,7 +735,7 @@ public class MainView {
         });
         HBox boxAllestimenti = new HBox(10, new Label("Lettini:"), spnLettini, new Label("Sdraio:"), spnSdraio, new Label("Sedie:"), spnSedie); boxAllestimenti.setAlignment(Pos.CENTER_LEFT);
 
-        grid.add(new Label("Cod. Prenotazione:"), 0, 0); grid.add(txtCodPren, 1, 0);
+        grid.add(new Label("Cod. Prenotazione:"), 0, 0); grid.add(boxPren, 1, 0);
         grid.add(new Label("Num. Ombrellone:"), 0, 1); grid.add(txtNumOmb, 1, 1);
         grid.add(new Label("Data Riferimento:"), 0, 2); grid.add(dpData, 1, 2);
         grid.add(btnCarica, 1, 3);
@@ -674,7 +824,7 @@ public class MainView {
         stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
     }
 
-    // FORM POP-UP MENU ALTRO (CON CAMPI DI TESTO NORMALI PER TARIFFA E SELETTORE CLIENTE)
+    // FORM POP-UP MENU ALTRO
     private void mostraFormCreaGruppo() {
         Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle("Crea Nuovo Gruppo");
         GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(20));
@@ -857,7 +1007,10 @@ public class MainView {
         TableColumn<StoricoPrenotazione, String> colCf = new TableColumn<>("CF Cliente"); colCf.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().cf()));
         TableColumn<StoricoPrenotazione, String> colNome = new TableColumn<>("Nome"); colNome.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().nome()));
         TableColumn<StoricoPrenotazione, String> colCognome = new TableColumn<>("Cognome"); colCognome.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().cognome()));
-        table.getColumns().addAll(colCod, colInizio, colFine, colCf, colNome, colCognome); table.setItems(FXCollections.observableArrayList(storico));
+        TableColumn<StoricoPrenotazione, Integer> colPrezzo = new TableColumn<>("Prezzo Tot (€)"); colPrezzo.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().prezzoTotale()));
+        
+        table.getColumns().addAll(colCod, colInizio, colFine, colCf, colNome, colCognome, colPrezzo); 
+        table.setItems(FXCollections.observableArrayList(storico));
         Button btnIndietro = new Button("Indietro"); btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
         VBox layout = new VBox(15, new Label("STORICO PRENOTAZIONI SPIAGGIA"), table, btnIndietro);
         layout.setAlignment(Pos.CENTER); layout.setPadding(new Insets(20));

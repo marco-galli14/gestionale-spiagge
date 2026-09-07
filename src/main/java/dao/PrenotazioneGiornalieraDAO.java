@@ -83,24 +83,4 @@ public class PrenotazioneGiornalieraDAO {
         return prenGiorn;
     }
 
-    public boolean deletePrenotazioneGiornaliera(int codPrenotazione, int numero, LocalDate dataRiferimento) {
-        String sql = "DELETE FROM prenotazione_giornaliera \n" +
-                        "WHERE CodPrenotazione = ? \n" +
-                        "AND Numero = ? \n" +
-                        "AND DataRiferimento = ?;";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, codPrenotazione);
-            stmt.setInt(2, numero);
-            stmt.setDate(3, Date.valueOf(dataRiferimento));
-            
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
 }
