@@ -56,8 +56,8 @@ public class PrenotazioneGiornalieraDAO {
     public List<PrenotazioneGiornaliera> getPrenotazioniGiornaliere(int codPrenotazione) {
         List<PrenotazioneGiornaliera> prenGiorn = new ArrayList<>();
 
-        String sql = "SELECT * " +
-                        "FROM prenotazione_giornaliera " +
+        String sql = "SELECT * \n" +
+                        "FROM prenotazione_giornaliera \n" +
                         "WHERE CodPrenotazione = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();

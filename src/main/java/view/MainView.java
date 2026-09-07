@@ -36,6 +36,7 @@ import model.Cliente;
 import model.Dipendente;
 import model.Prenotazione;
 import model.PrenotazioneCampo;
+import model.PrenotazioneGiornaliera;
 
 public class MainView {
 
@@ -49,6 +50,8 @@ public class MainView {
     private Scene scenaMenuAttrezzature;
     private Scene scenaMenuCampi;
     private Scene scenaMenuOmbrelloni;
+    private Scene scenaCentroContabilita;
+    private Scene scenaStatistiche;
     
     private final Map<String, Button> bottoniCampiMap = new HashMap<>();
     private List<StoricoNoleggio> listaStoricoNoleggiAttuali = new ArrayList<>();
@@ -64,7 +67,8 @@ public class MainView {
     private OnCreaPrenotazioneCampoListener onCreaPrenotazioneCampoAction;
     private Consumer<Integer> onEliminaPrenotazioneCampoAction;
     private OnRegistraPagamentoListener onRegistraPagamentoPrenotazione;
-    private Runnable onRichiediStatisticheDipendenti;
+    private Runnable onRichiediTopDipendentePrenotazioni;
+    private Runnable onRichiediTopDipendenteNoleggi;
     private BiConsumer<LocalDate, LocalDate> onRichiediOccupazioneZone;
     private Consumer<LocalDate> onGeneraReportGiornaliero;
     private Runnable onRichiediStoricoPrenotazioni;
@@ -74,6 +78,7 @@ public class MainView {
     private OnModificaAllestimentoGiornalieroListener onModificaAllestimentoGiornaliero;
     private OnRichiediAllestimentiGiornoListener onRichiediAllestimentiGiorno;
     
+    private Consumer<Integer> onRichiediPrenotazioniGiornaliere;
     private Runnable onVisualizzaContabilitaAction;
     private Consumer<LocalDate> onReportPerDataAction;
 
@@ -126,13 +131,15 @@ public class MainView {
     public void setOnCreaPrenotazioneCampoAction(OnCreaPrenotazioneCampoListener listener) { this.onCreaPrenotazioneCampoAction = listener; }
     public void setOnEliminaPrenotazioneCampoAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneCampoAction = listener; }
     public void setOnRegistraPagamentoPrenotazione(OnRegistraPagamentoListener listener) { this.onRegistraPagamentoPrenotazione = listener; }
-    public void setOnRichiediStatisticheDipendenti(Runnable listener) { this.onRichiediStatisticheDipendenti = listener; }
+    public void setOnRichiediTopDipendentePrenotazioni(Runnable listener) { this.onRichiediTopDipendentePrenotazioni = listener; }
+    public void setOnRichiediTopDipendenteNoleggi(Runnable listener) { this.onRichiediTopDipendenteNoleggi = listener; }
     public void setOnRichiediOccupazioneZone(BiConsumer<LocalDate, LocalDate> listener) { this.onRichiediOccupazioneZone = listener; }
     public void setOnGeneraReportGiornaliero(Consumer<LocalDate> listener) { this.onGeneraReportGiornaliero = listener; }
     public void setOnRichiediStoricoPrenotazioni(Runnable listener) { this.onRichiediStoricoPrenotazioni = listener; }
     public void setOnEliminaPrenotazioneSpiaggiaAction(Consumer<Integer> listener) { this.onEliminaPrenotazioneSpiaggiaAction = listener; }
     public void setOnModificaAllestimentoGiornaliero(OnModificaAllestimentoGiornalieroListener listener) { this.onModificaAllestimentoGiornaliero = listener; }
     public void setOnRichiediAllestimentiGiorno(OnRichiediAllestimentiGiornoListener listener) { this.onRichiediAllestimentiGiorno = listener; }
+    public void setOnRichiediPrenotazioniGiornaliere(Consumer<Integer> listener) { this.onRichiediPrenotazioniGiornaliere = listener; }
     public void setOnVisualizzaContabilitaAction(Runnable listener) { this.onVisualizzaContabilitaAction = listener; }
     public void setOnReportPerDataAction(Consumer<LocalDate> listener) { this.onReportPerDataAction = listener; }
 
@@ -277,6 +284,7 @@ public class MainView {
         Button btnInserisciPren = creaPulsanteSezione("Inserisci Prenotazione", 40);
         Button btnEliminaPren = creaPulsanteSezione("Elimina Prenotazione", 40);
         Button btnStoricoPren = creaPulsanteSezione("Storico Prenotazioni", 40);
+        Button btnPrenGior = creaPulsanteSezione("Visualizza Prenotazioni Giornaliere", 40);
         Button btnModificaAllestimentoGiorno = creaPulsanteSezione("Modifica Allestimento Giornaliero", 40);
 
         Button btnIndietro = new Button("⬅ Torna alla Mappa");
@@ -288,11 +296,28 @@ public class MainView {
         btnStoricoPren.setOnAction(e -> {
             if (onRichiediStoricoPrenotazioni != null) onRichiediStoricoPrenotazioni.run();
         });
+        btnPrenGior.setOnAction(e -> {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Ricerca Prenotazione");
+            dialog.setHeaderText("Visualizza Prenotazioni Giornaliere");
+            dialog.setContentText("Inserisci il codice prenotazione (numero):");
+
+            dialog.showAndWait().ifPresent(input -> {
+                try {
+                    int codice = Integer.parseInt(input.trim());
+                    if (onRichiediPrenotazioniGiornaliere != null) {
+                        onRichiediPrenotazioniGiornaliere.accept(codice);
+                    }
+                } catch (NumberFormatException ex) {
+                    mostraMessaggioEsito(false,"","Inserisci un numero intero valido.");
+                }
+            });
+        });
         btnModificaAllestimentoGiorno.setOnAction(e -> mostraFormModificaAllestimentoGiornaliero());
         btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
 
         VBox contentBox = new VBox(12, titolo, btnInserisciPren, btnEliminaPren, btnStoricoPren, 
-            btnModificaAllestimentoGiorno, btnIndietro);
+            btnPrenGior, btnModificaAllestimentoGiorno, btnIndietro);
         contentBox.setAlignment(Pos.CENTER);
 
         ScrollPane scroll = new ScrollPane(contentBox);
@@ -353,6 +378,57 @@ public class MainView {
         layout.getChildren().addAll(titolo, btnInserisci, btnElimina, btnIndietro);
         this.scenaMenuCampi = new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight());
         stage.setScene(scenaMenuCampi);
+    }
+
+    private void cambiaCentroContabilita() {
+
+    }
+
+    private void cambiaScenaStatistiche() {
+        VBox layout = new VBox(15);
+        layout.setPadding(new Insets(30));
+        layout.setAlignment(Pos.CENTER);
+        layout.setStyle("-fx-background-color: #f8f9fa;");
+
+        Label titolo = new Label("STATISTICHE");
+        titolo.setFont(new Font("System Bold", 22));
+
+        Button btnTopDipPren = creaPulsanteSezione("Dipendente con Più Prenotazioni", 45);
+        Button btnTopDipNol = creaPulsanteSezione("Dipendente con Più Noleggi", 45);
+        Button btnOccupazioneZone = creaPulsanteSezione("Percentuale Occupazione Spiaggia", 45);
+
+        Button btnIndietro = new Button("⬅ Torna alla Mappa");
+        btnIndietro.setPrefSize(180, 38);
+        btnIndietro.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+
+        // Azione 1: Dipendente con più prenotazioni
+        btnTopDipPren.setOnAction(e -> {
+            if (onRichiediTopDipendentePrenotazioni != null) {
+                onRichiediTopDipendentePrenotazioni.run();
+            }
+        });
+
+        // Azione 2: Dipendente con più noleggi
+        btnTopDipNol.setOnAction(e -> {
+            if (onRichiediTopDipendenteNoleggi != null) {
+                onRichiediTopDipendenteNoleggi.run();
+            }
+        });
+
+        // Azione 3: Percentuale occupazione spiaggia
+        btnOccupazioneZone.setOnAction(e -> mostraFormOccupazioneZone());
+
+        btnIndietro.setOnAction(e -> stage.setScene(scenaPrincipale));
+
+        VBox contentBox = new VBox(15, titolo, btnTopDipPren, btnTopDipNol, btnOccupazioneZone, btnIndietro);
+        contentBox.setAlignment(Pos.CENTER);
+
+        ScrollPane scroll = new ScrollPane(contentBox);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        this.scenaStatistiche = new Scene(scroll, stage.getScene().getWidth(), stage.getScene().getHeight());
+        stage.setScene(this.scenaStatistiche);
     }
 
     public void apriFormNuovaPrenotazionePerCella(int numeroCella) { 
@@ -874,7 +950,7 @@ public class MainView {
 
     private void mostraStoricoNoleggi() {
         TableView<StoricoNoleggio> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<StoricoNoleggio, String> colCf = new TableColumn<>("CF");
         colCf.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().cf()));
@@ -922,7 +998,7 @@ public class MainView {
 
     public void mostraStoricoPrenotazioni(List<StoricoPrenotazione> storico) {
         TableView<StoricoPrenotazione> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<StoricoPrenotazione, Integer> colCod = new TableColumn<>("Cod Prenotazione");
         colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().codPrenotazione()));
@@ -949,6 +1025,33 @@ public class MainView {
         btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
 
         VBox layout = new VBox(15, new Label("STORICO PRENOTAZIONI SPIAGGIA"), table, btnIndietro);
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(20));
+
+        stage.setScene(new Scene(layout, stage.getScene().getWidth(), stage.getScene().getHeight()));
+    }
+
+    public void mostraPrenotazioniGiornaliere(List<PrenotazioneGiornaliera> storico) {
+        TableView<PrenotazioneGiornaliera> table = new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        TableColumn<PrenotazioneGiornaliera, Integer> colCod = new TableColumn<>("Cod Prenotazione");
+        colCod.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getCodPrenotazione()));
+
+        TableColumn<PrenotazioneGiornaliera, Integer> colNum = new TableColumn<>("Numero");
+        colNum.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getNumero()));
+
+        TableColumn<PrenotazioneGiornaliera, LocalDate> colInizio = new TableColumn<>("Data Inizio");
+        colInizio.setCellValueFactory(cellData -> new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getDataRiferimento()));
+
+
+        table.getColumns().addAll(colCod, colNum, colInizio);
+        table.setItems(FXCollections.observableArrayList(storico));
+
+        Button btnIndietro = new Button("Indietro");
+        btnIndietro.setOnAction(e -> stage.setScene(scenaMenuOmbrelloni));
+
+        VBox layout = new VBox(15, new Label("PRENOTAZIONI GIORNALIERE"), table, btnIndietro);
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(20));
 
@@ -987,7 +1090,7 @@ public class MainView {
         lblNonSaldate.setFont(new Font("System Bold", 14));
 
         TableView<Prenotazione> tblNonSaldate = new TableView<>();
-        tblNonSaldate.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tblNonSaldate.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<Prenotazione, Integer> colCod = new TableColumn<>("Cod. Pren.");
         colCod.setCellValueFactory(cell -> new javafx.beans.property.SimpleObjectProperty<>(cell.getValue().getCodPrenotazione()));
@@ -1136,8 +1239,91 @@ public class MainView {
         alert.showAndWait();
     }
 
-    public void mostraStatisticheDipendenti(Pair<Dipendente, Integer> topPrenotazioni, Pair<Dipendente, Integer> topNoleggi) { }
-    public void mostraStatisticheZone(List<ZonaDAO.ZonaOccupazioneInfo> percentuali) { }
+    private void mostraFormOccupazioneZone() {
+        Stage popup = new Stage();
+        popup.initModality(Modality.APPLICATION_MODAL);
+        popup.setTitle("Occupazione Zone Mensile");
+
+        LocalDate oggi = getDataSelezionata();
+        DatePicker dpInizio = new DatePicker(oggi.withDayOfMonth(1));
+        DatePicker dpFine = new DatePicker(oggi.withDayOfMonth(oggi.lengthOfMonth()));
+
+        Button btnCalcola = new Button("Calcola Occupazione");
+        btnCalcola.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;");
+        btnCalcola.setOnAction(e -> {
+            if (dpInizio.getValue() != null && dpFine.getValue() != null && onRichiediOccupazioneZone != null) {
+                onRichiediOccupazioneZone.accept(dpInizio.getValue(), dpFine.getValue());
+                popup.close();
+            }
+        });
+
+        GridPane grid = new GridPane();
+        grid.setVgap(10); grid.setHgap(10);
+        grid.setAlignment(Pos.CENTER);
+        grid.add(new Label("Data Inizio:"), 0, 0); grid.add(dpInizio, 1, 0);
+        grid.add(new Label("Data Fine:"), 0, 1);   grid.add(dpFine, 1, 1);
+
+        VBox layout = new VBox(15, new Label("Seleziona il periodo mensile:"), grid, btnCalcola);
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(20));
+
+        popup.setScene(new Scene(layout, 360, 230));
+        popup.showAndWait();
+    }
+
+    public void mostraTopDipendentePrenotazioni(Pair<Dipendente, Integer> topPrenotazioni) {
+        StringBuilder sb = new StringBuilder();
+        if (topPrenotazioni != null && topPrenotazioni.key() != null) {
+            sb.append("Nome: ").append(topPrenotazioni.key().getNome()).append(" ").append(topPrenotazioni.key().getCognome()).append("\n")
+            .append("Codice Dipendente: ").append(topPrenotazioni.key().getCodDipendente()).append("\n")
+            .append("Totale Prenotazioni: ").append(topPrenotazioni.value());
+        } else {
+            sb.append("Nessuna prenotazione trovata.");
+        }
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Statistiche Dipendenti");
+        alert.setHeaderText("Dipendente con più prenotazioni");
+        alert.setContentText(sb.toString());
+        alert.showAndWait();
+    }
+
+    public void mostraTopDipendenteNoleggi(Pair<Dipendente, Integer> topNoleggi) {
+        StringBuilder sb = new StringBuilder();
+        if (topNoleggi != null && topNoleggi.key() != null) {
+            sb.append("Nome: ").append(topNoleggi.key().getNome()).append(" ").append(topNoleggi.key().getCognome()).append("\n")
+            .append("Codice Dipendente: ").append(topNoleggi.key().getCodDipendente()).append("\n")
+            .append("Totale Noleggi: ").append(topNoleggi.value());
+        } else {
+            sb.append("Nessun noleggio trovato.");
+        }
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Statistiche Dipendenti");
+        alert.setHeaderText("Dipendente con più noleggi");
+        alert.setContentText(sb.toString());
+        alert.showAndWait();
+    }
+
+    public void mostraStatisticheZone(List<ZonaDAO.ZonaOccupazioneInfo> percentuali) {
+        StringBuilder sb = new StringBuilder();
+        if (percentuali == null || percentuali.isEmpty()) {
+            sb.append("Nessun dato sull'occupazione disponibile per il periodo selezionato.");
+        } else {
+            for (ZonaDAO.ZonaOccupazioneInfo info : percentuali) {
+                sb.append("Zona ").append(info.getCodZona()).append(": ")
+                .append(info.getPercentualeOccupazione()).append("% di occupazione (")
+                .append(info.getOmbrelloniOccupati()).append(" su ").append(info.getCapienzaMassima()).append(" presenze max)\n");
+            }
+        }
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Percentuale Occupazione Zone");
+        alert.setHeaderText("Statistiche Occupazione Zone");
+        alert.setContentText(sb.toString());
+        alert.showAndWait();
+    }
+
     public void impostaTabellaPrenotazioni(List<StoricoPrenotazione> storico) { }
     public void aggiornaTabellaPrenotazioni(List<StoricoPrenotazione> storico) { }
     public void aggiornaListaPrenotazioniNonSaldate(List<Prenotazione> nonSaldate) { }
@@ -1166,6 +1352,7 @@ public class MainView {
         Button btnBocceSabbia = creaPulsanteCampo("BOCCE SABBIA");
         Button btnBocceCemento = creaPulsanteCampo("BOCCE CEMENTO");
         Button btnStoricoReport = creaPulsanteCampo("STORICO E CONTABILITÀ");
+        Button btnStatistiche = creaPulsanteCampo("STATISTICHE");
 
         bottoniCampiMap.put("C1", btnBeachVolley);
         bottoniCampiMap.put("C2", btnBeachTennis);
@@ -1189,7 +1376,10 @@ public class MainView {
             }
         });
 
-        boxCampi.getChildren().addAll(lblCampiTitle, btnBeachVolley, btnBeachTennis, btnCalcetto, btnBocceSabbia, btnBocceCemento, btnStoricoReport);
+        btnStatistiche.setOnAction(e -> cambiaScenaStatistiche());
+
+        boxCampi.getChildren().addAll(lblCampiTitle, btnBeachVolley, btnBeachTennis, btnCalcetto, 
+            btnBocceSabbia, btnBocceCemento, btnStoricoReport, btnStatistiche);
         pannello.getChildren().addAll(btnOmbrelloniMenu, btnAttrezzature, boxCampi);
         return pannello;
     }

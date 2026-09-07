@@ -66,11 +66,11 @@ public class DipendenteDAO {
 
     public Pair<Dipendente, Integer> getDipendenteWithMostNoleggi() {
 
-        String query = "SELECT d.CodDipendente, d.Nome, d.Cognome, COUNT(n.CodNoleggio) as NumeroNoleggi " +
-                        "FROM dipendente d, noleggio n " +
-                        "WHERE d.CodDipendente = n.CodDipendente " +
-                        "GROUP BY d.CodDipendente, d.Nome, d.Cognome " +
-                        "ORDER BY NumeroNoleggi DESC " +
+        String query = "SELECT d.CodDipendente, d.Nome, d.Cognome, d.Username, d.Pwd, d.Ruolo, COUNT(n.CodNoleggio) as NumeroNoleggi \n" +
+                        "FROM dipendente d, noleggio_attrezzatura n \n" +
+                        "WHERE d.CodDipendente = n.CodDipendente \n" +
+                        "GROUP BY d.CodDipendente, d.Nome, d.Cognome \n" +
+                        "ORDER BY NumeroNoleggi DESC \n" +
                         "LIMIT 1";
 
         try (Connection con = DatabaseConnection.getConnection();
@@ -82,9 +82,12 @@ public class DipendenteDAO {
                         int codDipendente = rs.getInt("CodDipendente");
                         String nome = rs.getString("Nome");
                         String cognome = rs.getString("Cognome");
+                        String user = rs.getString("Username");
+                        String pwd = rs.getString("Pwd");
+                        String ruolo = rs.getString("Ruolo");
                         int numeroNoleggi = rs.getInt("NumeroNoleggi");
                         // Assuming you have a constructor that takes these parameters
-                        return new Pair<>(new Dipendente(codDipendente, nome, cognome, null, null, null), numeroNoleggi);
+                        return new Pair<>(new Dipendente(codDipendente, nome, cognome, user, pwd, ruolo), numeroNoleggi);
                     } else {
                         return null; // No dipendente found
                     }
