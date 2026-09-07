@@ -14,7 +14,9 @@ import dao.OmbrelloneDAO;
 import dao.PagamentoDAO;
 import dao.PrenotazioneCampoDAO;
 import dao.PrenotazioneDAO;
+import dao.PrenotazioneGiornalieraDAO;
 import dao.ZonaDAO;
+import model.Cliente;
 import model.Dipendente;
 import model.PrenotazioneCampo;
 import view.MainView;
@@ -25,6 +27,7 @@ public final class MainController {
     
     private final ClienteDAO clienteDao;
     private final PrenotazioneDAO prenotazioneDao;
+    private final PrenotazioneGiornalieraDAO prenotazioneGiornalieraDao;
     private final MappaDAO mappaDao;
     private final NoleggioAttrezzaturaDAO noleggioAttrezzaturaDao;
     private final PagamentoDAO pagamentoDao;
@@ -38,6 +41,7 @@ public final class MainController {
         
         this.clienteDao = new ClienteDAO();
         this.prenotazioneDao = new PrenotazioneDAO();
+        this.prenotazioneGiornalieraDao = new PrenotazioneGiornalieraDAO();
         this.mappaDao = new MappaDAO();
         this.noleggioAttrezzaturaDao = new NoleggioAttrezzaturaDAO();
         this.pagamentoDao = new PagamentoDAO();
@@ -52,6 +56,11 @@ public final class MainController {
 
     private void inizializzaEventiUI() {
         
+        // Listener per recuperare la lista clienti e fornirla al popup di ricerca
+        view.setOnRichiediListaClienti(() -> {
+            return clienteDao.getTuttiIClienti();
+        });
+
         view.setOnCellaOmbrelloneClicked(numeroCella -> {
             gestisciInterazioneCellaSpiaggia(numeroCella);
         });
@@ -70,11 +79,22 @@ public final class MainController {
             view.mostraMessaggioEsito(ok, "Gruppo assegnato con successo!", "Errore nell'assegnazione del gruppo.");
         });
 
-        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf) -> {
+        view.setOnCreaPrenotazioneAction((dataInizio, dataFine, codDipendente, cf, numeriOmbrelloni) -> {
             int nuovoCodice = prenotazioneDao.addPrenotazione(dataInizio, dataFine, codDipendente, cf);
             if (nuovoCodice > 0) {
+                for (int numOmbrellone : numeriOmbrelloni) {
+                    LocalDate corrente = dataInizio;
+                    while (!corrente.isAfter(dataFine)) {
+                        prenotazioneGiornalieraDao.addPrenotazioneGiornaliera(nuovoCodice, numOmbrellone, corrente);
+                        corrente = corrente.plusDays(1);
+                    }
+                }
+
                 prenotazioneDao.updatePacchettoSconto(nuovoCodice);
                 prenotazioneDao.updateCostoTotale(nuovoCodice);
+                
+                aggiornaMappaSpiaggiaCompleta(view.getDataSelezionata(), LocalTime.now());
+                
                 view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
                 view.mostraMessaggioEsito(true, "Prenotazione creata con successo! Codice: " + nuovoCodice, "");
             } else {
@@ -85,6 +105,7 @@ public final class MainController {
         view.setOnEliminaPrenotazioneSpiaggiaAction(codPren -> {
             boolean eliminata = prenotazioneDao.eliminaPrenotazione(codPren);
             if (eliminata) {
+                aggiornaMappaSpiaggiaCompleta(view.getDataSelezionata(), LocalTime.now());
                 view.aggiornaTabellaPrenotazioni(prenotazioneDao.getStoricoPrenotazioni());
                 view.mostraMessaggioEsito(true, "Prenotazione " + codPren + " eliminata con successo!", "");
             } else {
@@ -170,10 +191,14 @@ public final class MainController {
     }
 
     private void gestisciInterazioneCellaSpiaggia(int numeroCella) {
-        LocalDate oggi = LocalDate.now();
-        List<MappaDAO.MappaOmbrelloneInfo> mappaOggi = mappaDao.getMappaSpiaggia(oggi);
+        LocalDate dataSelezionata = view.getDataSelezionata();
+        if (dataSelezionata == null) {
+            dataSelezionata = LocalDate.now();
+        }
         
-        MappaDAO.MappaOmbrelloneInfo cellaSelezionata = mappaOggi.stream()
+        List<MappaDAO.MappaOmbrelloneInfo> mappaData = mappaDao.getMappaSpiaggia(dataSelezionata);
+        
+        MappaDAO.MappaOmbrelloneInfo cellaSelezionata = mappaData.stream()
                 .filter(c -> c.getNumero() == numeroCella)
                 .findFirst()
                 .orElse(null);
