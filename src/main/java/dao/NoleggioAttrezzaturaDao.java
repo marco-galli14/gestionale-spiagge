@@ -14,7 +14,7 @@ import common.StoricoNoleggio;
 public class NoleggioAttrezzaturaDAO {
 
     public int inserisciNoleggioAttrezzatura(LocalDate dataNoleggio, LocalTime oraInizio, 
-                                            int durataOre, String cf, String codDipendente, String codAttrezzatura) {
+                                            int durataOre, String cf, int codDipendente, String codAttrezzatura) {
         
         String query = "INSERT INTO noleggio_attrezzatura (DataNoleggio, OraInizio, DurataOre, CostoTotale, CF, CodPrenotazione, CodDipendente, CodAttrezzatura) " +
                        "VALUES (?, ?, ?, '00.00', ?, (SELECT CodPrenotazione FROM Prenotazione WHERE CF = ? AND ? BETWEEN DataInizio AND DataFine LIMIT 1), ?, ?)";
@@ -28,7 +28,7 @@ public class NoleggioAttrezzaturaDAO {
             pstmt.setString(4, cf);
             pstmt.setString(5, cf); 
             pstmt.setDate(6, java.sql.Date.valueOf(dataNoleggio)); 
-            pstmt.setString(7, codDipendente);
+            pstmt.setInt(7, codDipendente);
             pstmt.setString(8, codAttrezzatura);
 
             if (pstmt.executeUpdate() > 0) {

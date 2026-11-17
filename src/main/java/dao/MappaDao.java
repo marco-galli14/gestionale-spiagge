@@ -17,12 +17,12 @@ public class MappaDAO {
 
     public static class MappaOmbrelloneInfo {
         private final int numero;
-        private final String codZona;
+        private final int codZona;
         private final String nomeZona;
         private final Integer codPrenotazione;
         private final String clientePrenotato;
 
-        public MappaOmbrelloneInfo(int numero, String codZona, String nomeZona, Integer codPrenotazione, String clientePrenotato) {
+        public MappaOmbrelloneInfo(int numero, int codZona, String nomeZona, Integer codPrenotazione, String clientePrenotato) {
             this.numero = numero;
             this.codZona = codZona;
             this.nomeZona = nomeZona;
@@ -31,7 +31,7 @@ public class MappaDAO {
         }
 
         public int getNumero() { return numero; }
-        public String getCodZona() { return codZona; }
+        public int getCodZona() { return codZona; }
         public String getNomeZona() { return nomeZona; }
         public Integer getCodPrenotazione() { return codPrenotazione; }
         public String getClientePrenotato() { return clientePrenotato; }
@@ -55,7 +55,7 @@ public class MappaDAO {
                 while (rs.next()) {
                     mappa.add(new MappaOmbrelloneInfo(
                         rs.getInt("Numero"),
-                        rs.getString("CodZona"),
+                        rs.getInt("CodZona"),
                         rs.getString("NomeZona"),
                         rs.getObject("CodPrenotazione", Integer.class), // CORRETTO: Gestisce correttamente il NULL come null di Java
                         rs.getString("ClientePrenotato")

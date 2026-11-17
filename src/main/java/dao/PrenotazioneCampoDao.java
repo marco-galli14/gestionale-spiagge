@@ -8,7 +8,7 @@ import java.time.LocalTime;
 
 public class PrenotazioneCampoDAO {
 
-    public boolean inserisciPrenotazioneCampo(LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, String codDipendente) {
+    public boolean inserisciPrenotazioneCampo(LocalDate dataPrenotazione, LocalTime oraInizio, LocalTime oraFine, String codCampo, String cf, int codDipendente) {
         String query = "INSERT INTO prenotazione_campo (DataPrenotazione, OraInizio, OraFine, CodCampo, CF, CodDipendente) " +
                        "VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -20,7 +20,7 @@ public class PrenotazioneCampoDAO {
             pstmt.setTime(3, java.sql.Time.valueOf(oraFine));
             pstmt.setString(4, codCampo);
             pstmt.setString(5, cf);
-            pstmt.setString(6, codDipendente);
+            pstmt.setInt(6, codDipendente);
 
             return pstmt.executeUpdate() > 0;
 

@@ -8,7 +8,7 @@ import java.util.List;
 public class ZonaDAO {
 
     public static class ZonaOccupazioneInfo {
-        private final int codZona; // Aggiornato a int
+        private final int codZona;
         private final int ombrelloniOccupati;
         private final int capienzaMassima;
         private final double percentualeOccupazione;
@@ -54,7 +54,7 @@ public class ZonaDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     risultati.add(new ZonaOccupazioneInfo(
-                        rs.getInt("CodZona"), // Aggiornato a getInt
+                        rs.getInt("CodZona"),
                         rs.getInt("OmbrelloniOccupati"),
                         rs.getInt("CapienzaMassimaMese"),
                         rs.getDouble("PercentualeOccupazione")

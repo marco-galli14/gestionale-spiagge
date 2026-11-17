@@ -16,7 +16,7 @@ public class HotelDAO {
 
             ps.setInt(1, codHotel);
             ps.setString(2, nomeHotel);
-            ps.setFloat(3, scontoHotel);
+            ps.setInt(3, scontoHotel);
 
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0; // Return true if the insert was successful
