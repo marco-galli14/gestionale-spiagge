@@ -195,7 +195,7 @@ public class OmbrelloniView extends BaseView {
 
         List<Integer> ombrelloniSelezionati = new ArrayList<>();
         int r = 0, c = 0;
-        for (int i = 1; i <= 60; i++) {
+        for (int i = 1; i <= 100; i++) {
             Button btn = new Button(String.valueOf(i));
             btn.setPrefSize(45, 35);
             final int numOmb = i;
@@ -228,7 +228,7 @@ public class OmbrelloniView extends BaseView {
 
         VBox layout = new VBox(15, new Label("Verdi = Disponibili | Rossi = Occupati"), new ScrollPane(gridMiniMappa), btnConferma);
         layout.setAlignment(Pos.CENTER); layout.setPadding(new Insets(15));
-        popup.setScene(new Scene(layout, 500, 450));
+        popup.setScene(new Scene(layout, 558, 550));
         popup.showAndWait();
     }
 
